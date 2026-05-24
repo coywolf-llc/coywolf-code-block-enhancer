@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.16
+Stable tag: 1.0.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -192,6 +192,9 @@ standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
 are restricted to a GitHub host allowlist as a safety check.
 
 == Changelog ==
+
+= 1.0.17 =
+* Default theme: continuous background; preview alignment (#18).
 
 = 1.0.16 =
 * Rename Coywolf theme to default.css; add custom-theme upload (#17).
