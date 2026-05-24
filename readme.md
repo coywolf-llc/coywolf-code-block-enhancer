@@ -19,6 +19,7 @@ Coywolf Code Block Enhancer extends the built-in `core/code` block. In the edito
 - Adds a small language label in the top-left of each highlighted block (only when a language is set).
 - Adds an accessible copy-to-clipboard button — `aria-label`, a polite status region that announces "Copied to clipboard," and a visible "✓" state for two seconds after a successful copy. Falls back to `document.execCommand('copy')` on non-HTTPS or older browsers.
 - Assets load only on singular posts/pages that contain a code block; Prism core and grammars are loaded with the `defer` strategy so they never block rendering.
+- **Dark-mode aware** out of the box — code blocks follow the visitor's `prefers-color-scheme` automatically. Override the behaviour from **Tools → Code Blocks** to lock blocks to "Always light" or "Always dark" for every visitor.
 - In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard **Dashboard → Updates** flow (latest release cached for 6 hours). Downloads are pinned to a GitHub host allowlist as a safety check.
 
 ### How it works
@@ -61,6 +62,10 @@ No. The token CSS only enqueues on singular posts/pages where `has_block( 'core/
 ### My site has a Content Security Policy. What do I need to allow?
 
 Nothing extra. Prism and the copy-button script are bundled with the plugin and served from your own origin, so a `script-src 'self'` policy is enough. There is no external CDN call from the front end.
+
+### How do I lock code blocks to light or dark mode for everyone?
+
+Go to **Tools → Code Blocks** in WP Admin and pick **Always light** or **Always dark**. The default is **Auto**, which follows each visitor's OS / browser dark-mode preference. The lock is implemented in CSS — there is no inline `<style>` injected per request — so it composes cleanly with caching plugins.
 
 ### Why is the language label not appearing on a particular block?
 
