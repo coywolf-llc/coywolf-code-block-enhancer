@@ -123,13 +123,14 @@ add_action( 'wp_enqueue_scripts', function () {
 	wp_register_style( 'cbe-style', CBE_URL . 'css/code-block.css', array(), CBE_VERSION );
 
 	// Selected theme stylesheet (depends on cbe-style so token colours can
-	// reference the chrome's CSS custom properties / load after it). Theme
-	// files come from assets/themes/; the key is whitelisted by the
-	// settings sanitiser, so the path is safe to interpolate.
+	// reference the chrome's CSS custom properties / load after it). Bundled
+	// themes resolve to assets/themes/<file>; an uploaded custom theme
+	// resolves to <uploads>/code-block-enhancer/custom.css?v=<ts>. The key
+	// is whitelisted by the settings sanitiser, so the URL is safe.
 	$theme = Coywolf_CBE_Settings::current_theme_entry();
 	wp_register_style(
 		'cbe-theme',
-		CBE_URL . 'assets/themes/' . $theme['file'],
+		Coywolf_CBE_Settings::theme_url( $theme ),
 		array( 'cbe-style' ),
 		CBE_VERSION
 	);

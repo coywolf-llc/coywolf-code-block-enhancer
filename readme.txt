@@ -42,6 +42,11 @@ copy-to-clipboard button to the top-right corner.
   `prefers-color-scheme` automatically. Override from
   **Tools → Code Blocks** by switching to **Default — Always light** /
   **Always dark**, or by picking any of the static Prism themes.
+* Upload a custom theme — drop in a single `.css` file (up to 256 KB)
+  and it shows up in the dropdown as a "Custom" option. The file is
+  checked for unsafe content (script tags, PHP open tags, `javascript:`
+  URIs, `expression()`, etc.) before being saved. Only one custom theme
+  is stored at a time — uploading replaces, removing wipes.
 * In-WordPress updates: new versions are pulled from this project's
   GitHub Releases through the standard Dashboard → Updates flow (latest
   release cached for 6 hours).
@@ -139,6 +144,28 @@ default), switch to **Default — Always light** or
 appearance — those themes are static and don't react to OS dark mode.
 The lock is implemented in CSS — there is no inline `<style>` injected
 per request — so it composes cleanly with caching plugins.
+
+= Can I use my own theme? =
+
+Yes. Scroll past the dropdown on **Tools → Code Blocks** to the
+**Custom theme** section and upload a single `.css` file (up to 256
+KB). It's added to the dropdown under a **Custom** group so you can
+select it like any other theme. Replacing the upload swaps the file in
+place; **Remove custom theme** deletes it. Only one custom theme is
+stored at a time — the plugin doesn't manage a library.
+
+Security checks before the file is written:
+
+* Capability (`manage_options`) and nonce checks on the form submission.
+* Filename must end in `.css`; MIME validated via
+  `wp_check_filetype_and_ext()`.
+* Size capped at 256 KB.
+* Content is rejected outright if it contains `<script>`, `<?php` /
+  `<?=`, `javascript:` / `vbscript:` URIs, `data:text/html`,
+  `expression(`, `behavior:`, or `-moz-binding:` anywhere in the file.
+* File is written to `wp-content/uploads/code-block-enhancer/custom.css`
+  (alongside your other media), not into the plugin directory —
+  updating the plugin doesn't blow it away.
 
 = Where do the Prism themes come from? =
 
