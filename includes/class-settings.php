@@ -201,6 +201,7 @@ final class Coywolf_CBE_Settings {
 		add_action( 'admin_init',            array( $this, 'register_setting' ) );
 		add_action( 'admin_init',            array( $this, 'maybe_migrate_legacy_option' ) );
 		add_action( 'admin_init',            array( 'Coywolf_CBE_Language_Packs', 'maybe_migrate_legacy_packs' ) );
+		add_action( 'admin_init',            array( 'Coywolf_CBE_Language_Packs', 'maybe_merge_baseline_into_languages' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'admin_post_cbe_upload_custom_theme', array( $this, 'handle_upload' ) );
 		add_action( 'admin_post_cbe_remove_custom_theme', array( $this, 'handle_remove' ) );
@@ -650,7 +651,7 @@ final class Coywolf_CBE_Settings {
 
 	public function render_languages_section_intro() {
 		echo '<p>' . esc_html__(
-			'A baseline of 9 languages — Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML — is always loaded. Toggle the packs below to add more grammars to the editor dropdown and the front-end highlighter. Only enabled packs are downloaded by visitors; each pack costs roughly 1–6 KB per grammar.',
+			'Tick the individual languages you want to appear in the Code block sidebar dropdown. The first 9 entries in Web / App dev (Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML) are checked by default on a fresh install; everything else is optional. Visitors only download the grammar file for the language a code block actually uses on the page, plus any Prism dependencies that grammar needs (typically 1–6 KB each).',
 			'code-block-enhancer'
 		) . '</p>';
 	}
