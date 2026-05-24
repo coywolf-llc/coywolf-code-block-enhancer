@@ -3,7 +3,7 @@
  * Plugin Name:       Coywolf Code Block Enhancer
  * Plugin URI:        https://github.com/coywolf-llc/coywolf-code-block-enhancer
  * Description:       Adds a language selector to the core Code block, Prism.js syntax highlighting with a custom token palette, and a copy-to-clipboard button. Assets load only on posts that contain a code block.
- * Version:           1.0.11
+ * Version:           1.0.12
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Coywolf
@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CBE_VERSION', '1.0.11' );
+define( 'CBE_VERSION', '1.0.12' );
 define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
 define( 'CBE_PLUGIN_FILE', __FILE__ );
 
