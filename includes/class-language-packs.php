@@ -2,48 +2,62 @@
 /**
  * Language registry for Coywolf Code Block Enhancer.
  *
- * Splits the Prism grammars into a small always-loaded BASELINE (the
- * original 9 languages the plugin shipped with) plus five thematic
- * "packs." The packs are a UI grouping only — what's actually persisted
- * is a flat list of enabled language handles in the `cbe_languages`
- * option, so the admin can toggle any subset of a pack's grammars on
- * or off individually.
+ * Every user-pickable grammar lives in one of five UI packs. The Web /
+ * App dev pack is the "baseline" — its first nine entries (Bash, CSS,
+ * HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML) are checked
+ * by default on a fresh install; the remaining entries in that pack
+ * (TypeScript, JSX, TSX, SCSS, Sass, Less, GraphQL) are unchecked.
+ * All four other packs are unchecked by default.
  *
- * Pack contents come from PrismJS/prism v1.30.0 components.json. A few
- * languages users sometimes ask about (Vue, Svelte, XML, T-SQL) are
- * intentionally omitted: Prism doesn't ship standalone grammars for
- * Vue or Svelte; XML is just an alias for the baseline `markup`
- * grammar; T-SQL syntax is covered by the baseline `sql` grammar.
+ * Two grammars (`markup-templating` and `clike`) exist only as
+ * dependencies of user-pickable grammars and don't appear in any pack
+ * or in the editor dropdown. They get pulled into the loaded set
+ * automatically whenever a grammar that needs them is enabled (PHP
+ * needs markup-templating; JavaScript and most C-family backend langs
+ * need clike).
+ *
+ * The active state is persisted as a flat list of enabled language
+ * handles in the `cbe_languages` option. Two migrations run on
+ * `admin_init` and are each idempotent:
+ *
+ *   maybe_migrate_legacy_packs()      — expand the v1.0.27
+ *                                       `cbe_language_packs` pack-keys
+ *                                       array into per-language
+ *                                       handles, then delete the
+ *                                       legacy option.
+ *   maybe_merge_baseline_into_languages()
+ *                                     — for sites upgrading from
+ *                                       v1.0.28 (or earlier via
+ *                                       pack-migration), merge the 9
+ *                                       former-baseline handles into
+ *                                       cbe_languages so the editor
+ *                                       dropdown doesn't lose them.
+ *                                       Tracked by a one-shot flag
+ *                                       option.
+ *
+ * Languages users sometimes ask about that ARE intentionally omitted:
+ * Vue, Svelte (Prism ships no standalone grammar); XML (alias for the
+ * markup grammar); T-SQL (covered by the sql grammar).
  *
  * Public surface:
  *
  *   self::all_packs()              → registry of pack metadata + langs
- *   self::baseline_handles()       → list of always-loaded handles
- *   self::baseline_label_handles() → baseline handles minus the deps-only
- *                                    ones (markup-templating, clike)
  *   self::default_languages()      → handles enabled on first install
  *   self::enabled_languages()      → the admin's saved selection
  *   self::sanitize_languages()     → whitelist sanitiser for the option
  *   self::active_handles_with_deps()
- *                                  → topologically-ordered map of
- *                                    [handle => [requires_handles]] for
- *                                    every grammar currently in play
- *                                    (baseline + enabled selection +
- *                                    transitive deps). Used by the
- *                                    enqueue layer to register each
- *                                    grammar with its real deps.
+ *                                  → ordered [handle => [requires]] map
+ *                                    suitable for wp_register_script,
+ *                                    with transitive deps pulled in
  *   self::active_language_choices()
  *                                  → { value, label } pairs for the
- *                                    editor dropdown
+ *                                    editor dropdown (enabled langs
+ *                                    only, grouped by pack)
  *   self::active_language_handles()
  *                                  → flat list of selectable handles
- *                                    (for render_block's allowlist)
+ *                                    (render_block's allowlist)
  *   self::maybe_migrate_legacy_packs()
- *                                  → one-shot: expand the old
- *                                    `cbe_language_packs` pack-keys
- *                                    array into the new flat
- *                                    `cbe_languages` handles array,
- *                                    then delete the legacy option.
+ *   self::maybe_merge_baseline_into_languages()
  *
  * @package CodeBlockEnhancer
  */
@@ -56,42 +70,66 @@ final class Coywolf_CBE_Language_Packs {
 
 	const OPTION              = 'cbe_languages';
 	const LEGACY_PACKS_OPTION = 'cbe_language_packs';
+	const BASELINE_MERGE_FLAG = 'cbe_baseline_merged_v1';
 
 	/**
-	 * Baseline grammars — always loaded regardless of selection.
-	 * The `label` key is null for deps-only entries (markup-templating,
-	 * clike) which shouldn't appear in the editor dropdown.
+	 * Grammars that aren't user-pickable but are pulled in automatically
+	 * when something that needs them is enabled. Indexed the same way as
+	 * a pack entry so the dependency resolver can look them up uniformly.
 	 */
-	private static $baseline = array(
-		'markup'              => array( 'label' => 'HTML / Markup' ),
-		'markup-templating'   => array( 'label' => null ), // dep only.
-		'clike'               => array( 'label' => null ), // dep only.
-		'css'                 => array( 'label' => 'CSS' ),
-		'javascript'          => array( 'label' => 'JavaScript' ),
-		'bash'                => array( 'label' => 'Bash / Shell' ),
-		'json'                => array( 'label' => 'JSON' ),
-		'php'                 => array( 'label' => 'PHP' ),
-		'python'              => array( 'label' => 'Python' ),
-		'sql'                 => array( 'label' => 'SQL' ),
-		'yaml'                => array( 'label' => 'YAML' ),
-	);
+	private static function dep_grammars() {
+		return array(
+			'markup-templating' => array( 'requires' => array( 'markup' ) ),
+			'clike'             => array( 'requires' => array() ),
+		);
+	}
 
 	/**
-	 * Optional language packs. Generated from Prism v1.30.0 components.json.
+	 * Handles checked by default on first install — the 9 entries at the
+	 * top of the Web/App dev pack. Mirrors what older versions of the
+	 * plugin loaded as the always-on baseline.
+	 */
+	public static function default_languages() {
+		return array( 'bash', 'css', 'markup', 'javascript', 'json', 'php', 'python', 'sql', 'yaml' );
+	}
+
+	/**
+	 * The same nine handles as a private list, used by the
+	 * baseline-merge migration so existing installs don't lose them.
+	 */
+	private static function former_baseline_handles() {
+		return self::default_languages();
+	}
+
+	/**
+	 * UI groupings — packs. The Web/App dev pack now holds the 9
+	 * default-checked baseline grammars at the top followed by the 7
+	 * default-unchecked web/app extras.
 	 */
 	private static function packs() {
 		return array(
 			'web_app'    => array(
 				'label'       => __( 'Web / App dev', 'code-block-enhancer' ),
-				'description' => __( 'TypeScript, JSX, TSX, SCSS, Sass, Less, GraphQL.', 'code-block-enhancer' ),
+				'description' => __( 'Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML — plus TypeScript, JSX, TSX, SCSS, Sass, Less, GraphQL.', 'code-block-enhancer' ),
 				'langs'       => array(
-					'typescript' => array( 'label' => 'TypeScript', 'requires' => array( 'javascript' ) ),
-					'jsx'        => array( 'label' => 'React JSX',  'requires' => array( 'markup', 'javascript' ) ),
-					'tsx'        => array( 'label' => 'React TSX',  'requires' => array( 'jsx', 'typescript' ) ),
-					'scss'       => array( 'label' => 'Sass (SCSS)', 'requires' => array( 'css' ) ),
-					'sass'       => array( 'label' => 'Sass (Sass)', 'requires' => array( 'css' ) ),
-					'less'       => array( 'label' => 'Less',       'requires' => array( 'css' ) ),
-					'graphql'    => array( 'label' => 'GraphQL',    'requires' => array() ),
+					// Default-checked: the former always-on baseline.
+					'bash'       => array( 'label' => 'Bash / Shell',  'requires' => array() ),
+					'css'        => array( 'label' => 'CSS',           'requires' => array( 'markup' ) ),
+					'markup'     => array( 'label' => 'HTML / Markup', 'requires' => array() ),
+					'javascript' => array( 'label' => 'JavaScript',    'requires' => array( 'clike' ) ),
+					'json'       => array( 'label' => 'JSON',          'requires' => array() ),
+					'php'        => array( 'label' => 'PHP',           'requires' => array( 'markup-templating' ) ),
+					'python'     => array( 'label' => 'Python',        'requires' => array() ),
+					'sql'        => array( 'label' => 'SQL',           'requires' => array() ),
+					'yaml'       => array( 'label' => 'YAML',          'requires' => array() ),
+					// Default-unchecked: web/app extras.
+					'typescript' => array( 'label' => 'TypeScript',    'requires' => array( 'javascript' ) ),
+					'jsx'        => array( 'label' => 'React JSX',     'requires' => array( 'markup', 'javascript' ) ),
+					'tsx'        => array( 'label' => 'React TSX',     'requires' => array( 'jsx', 'typescript' ) ),
+					'scss'       => array( 'label' => 'Sass (SCSS)',   'requires' => array( 'css' ) ),
+					'sass'       => array( 'label' => 'Sass (Sass)',   'requires' => array( 'css' ) ),
+					'less'       => array( 'label' => 'Less',          'requires' => array( 'css' ) ),
+					'graphql'    => array( 'label' => 'GraphQL',       'requires' => array() ),
 				),
 			),
 			'backend'    => array(
@@ -121,16 +159,16 @@ final class Coywolf_CBE_Language_Packs {
 				'label'       => __( 'Shells / Ops', 'code-block-enhancer' ),
 				'description' => __( 'PowerShell, Docker, nginx, Apache Configuration, systemd.', 'code-block-enhancer' ),
 				'langs'       => array(
-					'powershell' => array( 'label' => 'PowerShell', 'requires' => array() ),
-					'docker'     => array( 'label' => 'Docker',     'requires' => array() ),
-					'nginx'      => array( 'label' => 'nginx',      'requires' => array() ),
+					'powershell' => array( 'label' => 'PowerShell',    'requires' => array() ),
+					'docker'     => array( 'label' => 'Docker',        'requires' => array() ),
+					'nginx'      => array( 'label' => 'nginx',         'requires' => array() ),
 					'apacheconf' => array( 'label' => 'Apache config', 'requires' => array() ),
-					'systemd'    => array( 'label' => 'systemd',    'requires' => array() ),
+					'systemd'    => array( 'label' => 'systemd',       'requires' => array() ),
 				),
 			),
 			'data_docs'  => array(
 				'label'       => __( 'Data / Docs', 'code-block-enhancer' ),
-				'description' => __( 'Markdown, TOML, INI, Diff, Git, Regex. (XML is the baseline HTML / Markup grammar.)', 'code-block-enhancer' ),
+				'description' => __( 'Markdown, TOML, INI, Diff, Git, Regex. (XML is the HTML / Markup grammar in the Web/App dev pack.)', 'code-block-enhancer' ),
 				'langs'       => array(
 					'markdown' => array( 'label' => 'Markdown', 'requires' => array( 'markup' ) ),
 					'toml'     => array( 'label' => 'TOML',     'requires' => array() ),
@@ -142,7 +180,7 @@ final class Coywolf_CBE_Language_Packs {
 			),
 			'db'         => array(
 				'label'       => __( 'DB', 'code-block-enhancer' ),
-				'description' => __( 'PL/SQL, Cypher (Neo4j), MongoDB, SPARQL, Turtle. (T-SQL syntax is covered by the baseline SQL grammar.)', 'code-block-enhancer' ),
+				'description' => __( 'PL/SQL, Cypher (Neo4j), MongoDB, SPARQL, Turtle. (T-SQL syntax is covered by the SQL grammar in the Web/App dev pack.)', 'code-block-enhancer' ),
 				'langs'       => array(
 					'plsql'   => array( 'label' => 'PL/SQL',  'requires' => array( 'sql' ) ),
 					'cypher'  => array( 'label' => 'Cypher',  'requires' => array() ),
@@ -158,31 +196,18 @@ final class Coywolf_CBE_Language_Packs {
 		return self::packs();
 	}
 
-	public static function baseline_handles() {
-		return array_keys( self::$baseline );
-	}
-
-	/**
-	 * Baseline handles that have a label (i.e. user-pickable in the
-	 * dropdown). Excludes deps-only entries.
-	 */
-	public static function baseline_label_handles() {
-		$out = array();
-		foreach ( self::$baseline as $h => $meta ) {
-			if ( null !== $meta['label'] ) {
-				$out[ $h ] = $meta['label'];
+	/** Flat map of every grammar's info (deps + dep-only grammars). */
+	private static function all_known_grammars() {
+		$out = self::dep_grammars();
+		foreach ( self::packs() as $pack ) {
+			foreach ( $pack['langs'] as $h => $info ) {
+				$out[ $h ] = array( 'requires' => isset( $info['requires'] ) ? $info['requires'] : array() );
 			}
 		}
 		return $out;
 	}
 
-	/** Default enabled languages on first install = the web_app pack. */
-	public static function default_languages() {
-		$packs = self::packs();
-		return array_keys( $packs['web_app']['langs'] );
-	}
-
-	/** Whitelist of every handle in any pack — the universe of valid keys. */
+	/** Whitelist of every user-pickable handle in any pack. */
 	private static function all_pack_handles() {
 		$out = array();
 		foreach ( self::packs() as $pack ) {
@@ -191,7 +216,6 @@ final class Coywolf_CBE_Language_Packs {
 		return $out;
 	}
 
-	/** Sanitise a stored value (array of valid handle strings). */
 	public static function sanitize_languages( $value ) {
 		if ( ! is_array( $value ) ) {
 			return self::default_languages();
@@ -203,7 +227,7 @@ final class Coywolf_CBE_Language_Packs {
 				$out[] = $h;
 			}
 		}
-		return $out; // empty array is allowed (means "baseline only").
+		return $out; // Empty array is allowed (means "no languages offered in the dropdown").
 	}
 
 	public static function enabled_languages() {
@@ -216,25 +240,20 @@ final class Coywolf_CBE_Language_Packs {
 	}
 
 	/**
-	 * One-shot migration from the v1.0.27 `cbe_language_packs` (array of
-	 * pack keys) to the new flat `cbe_languages` (array of handle
-	 * strings). Runs once on the first admin pageload after upgrade.
-	 *
-	 * No-ops if the new option already has a stored row, OR if the
-	 * legacy option was never persisted.
+	 * One-shot migration from v1.0.27's `cbe_language_packs` (array of
+	 * pack keys) to `cbe_languages` (array of handle strings).
 	 */
 	public static function maybe_migrate_legacy_packs() {
 		$sentinel = '__cbe_unset__';
 		if ( get_option( self::OPTION, $sentinel ) !== $sentinel ) {
-			return; // already on the new option.
+			return;
 		}
 
 		$legacy = get_option( self::LEGACY_PACKS_OPTION, $sentinel );
 		if ( $sentinel === $legacy ) {
-			return; // legacy never set; let default_languages() apply.
+			return;
 		}
 
-		// Expand pack keys into the underlying language handles.
 		$packs = self::packs();
 		$langs = array();
 		if ( is_array( $legacy ) ) {
@@ -251,29 +270,76 @@ final class Coywolf_CBE_Language_Packs {
 	}
 
 	/**
-	 * Build the union of baseline + enabled languages, walk each entry's
-	 * `requires` list to pull in any transitive dep that isn't already
-	 * present, then topologically sort. Returns an ordered map of
-	 * [handle => [requires_handles]] suitable for wp_register_script.
+	 * One-shot merge for sites upgrading from v1.0.28 (or earlier,
+	 * post-pack-migration). The 9 former-baseline grammars used to be
+	 * loaded unconditionally; they're now toggle-able pack entries.
+	 * Without this merge, an upgrade would silently strip them from the
+	 * editor dropdown and break highlighting on existing code blocks.
 	 *
-	 * @return array<string, string[]>
+	 * No-op on fresh installs (cbe_languages not set yet — defaults will
+	 * already include the baseline) and on sites that have already run
+	 * the merge (tracked by a one-shot flag option).
 	 */
-	public static function active_handles_with_deps() {
-		$registry = array();
-		foreach ( self::$baseline as $h => $_meta ) {
-			$registry[ $h ] = array( 'requires' => self::baseline_requires( $h ) );
+	public static function maybe_merge_baseline_into_languages() {
+		if ( get_option( self::BASELINE_MERGE_FLAG, false ) ) {
+			return;
 		}
 
-		$enabled = self::enabled_languages();
-		foreach ( self::packs() as $pack ) {
-			foreach ( $pack['langs'] as $h => $info ) {
-				if ( in_array( $h, $enabled, true ) ) {
-					$registry[ $h ] = array( 'requires' => isset( $info['requires'] ) ? $info['requires'] : array() );
+		$sentinel = '__cbe_unset__';
+		$current  = get_option( self::OPTION, $sentinel );
+
+		// Fresh install — defaults apply, nothing to merge. Still set the
+		// flag so this never re-runs.
+		if ( $sentinel === $current ) {
+			update_option( self::BASELINE_MERGE_FLAG, true );
+			return;
+		}
+
+		if ( is_array( $current ) ) {
+			$merged = array_values( array_unique( array_merge( $current, self::former_baseline_handles() ) ) );
+			if ( $merged !== $current ) {
+				update_option( self::OPTION, $merged );
+			}
+		}
+
+		update_option( self::BASELINE_MERGE_FLAG, true );
+	}
+
+	/**
+	 * Build the load set: enabled languages + every transitive dep
+	 * (whether the dep itself is enabled or not), topologically sorted.
+	 *
+	 * A user can enable TypeScript while leaving JavaScript unchecked —
+	 * javascript still has to load because typescript requires it. Same
+	 * for the dep-only grammars (clike, markup-templating) that aren't
+	 * pickable but are pulled in by their dependents.
+	 *
+	 * @return array<string, string[]> Ordered map of handle → requires.
+	 */
+	public static function active_handles_with_deps() {
+		$known = self::all_known_grammars();
+
+		$registry = array();
+		foreach ( self::enabled_languages() as $h ) {
+			if ( isset( $known[ $h ] ) ) {
+				$registry[ $h ] = $known[ $h ];
+			}
+		}
+
+		// BFS to pull in transitive deps that aren't already in the registry.
+		$queue = array_keys( $registry );
+		while ( ! empty( $queue ) ) {
+			$h    = array_shift( $queue );
+			$reqs = isset( $registry[ $h ]['requires'] ) ? $registry[ $h ]['requires'] : array();
+			foreach ( $reqs as $r ) {
+				if ( ! isset( $registry[ $r ] ) && isset( $known[ $r ] ) ) {
+					$registry[ $r ] = $known[ $r ];
+					$queue[]        = $r;
 				}
 			}
 		}
 
-		// Iterative-safe DFS topo-sort.
+		// Topologically sort.
 		$order   = array();
 		$visited = array();
 		foreach ( array_keys( $registry ) as $start ) {
@@ -287,12 +353,6 @@ final class Coywolf_CBE_Language_Packs {
 		return $out;
 	}
 
-	/**
-	 * Backwards-compatible flat handle list (just the keys of
-	 * active_handles_with_deps()).
-	 *
-	 * @return string[]
-	 */
 	public static function active_handles() {
 		return array_keys( self::active_handles_with_deps() );
 	}
@@ -305,7 +365,7 @@ final class Coywolf_CBE_Language_Packs {
 		$reqs = isset( $registry[ $handle ]['requires'] ) ? $registry[ $handle ]['requires'] : array();
 		foreach ( $reqs as $req ) {
 			if ( ! isset( $registry[ $req ] ) ) {
-				continue; // unknown dep — skip rather than abort.
+				continue;
 			}
 			self::visit( $req, $registry, $visited, $order );
 		}
@@ -313,38 +373,15 @@ final class Coywolf_CBE_Language_Packs {
 		$order[] = $handle;
 	}
 
-	private static function baseline_requires( $handle ) {
-		$map = array(
-			'markup'              => array(),
-			'markup-templating'   => array( 'markup' ),
-			'clike'               => array(),
-			'css'                 => array( 'markup' ),
-			'javascript'          => array( 'clike' ),
-			'bash'                => array(),
-			'json'                => array(),
-			'php'                 => array( 'markup-templating' ),
-			'python'              => array(),
-			'sql'                 => array(),
-			'yaml'                => array(),
-		);
-		return isset( $map[ $handle ] ) ? $map[ $handle ] : array();
-	}
-
 	/**
-	 * { value, label } pairs for the editor dropdown. Baseline labels
-	 * first (A-Z), then each pack's enabled languages (A-Z within the
-	 * pack, packs in registry order).
+	 * { value, label } pairs for the editor dropdown — enabled langs
+	 * only, grouped by pack (packs in registry order, langs A-Z within
+	 * each pack).
 	 */
 	public static function active_language_choices() {
 		$choices = array(
 			array( 'value' => '', 'label' => __( 'None (plain text)', 'code-block-enhancer' ) ),
 		);
-
-		$base = self::baseline_label_handles();
-		asort( $base );
-		foreach ( $base as $h => $label ) {
-			$choices[] = array( 'value' => $h, 'label' => $label );
-		}
 
 		$enabled = self::enabled_languages();
 		foreach ( self::packs() as $pack ) {
