@@ -38,11 +38,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'CBE_VERSION', '1.0.9' );
 define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
+define( 'CBE_PLUGIN_FILE', __FILE__ );
 
 require_once __DIR__ . '/includes/class-github-updater.php';
+require_once __DIR__ . '/includes/class-settings.php';
 
 // Pull updates from GitHub Releases via the standard WP update flow.
 ( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
+
+// Tools → Code Blocks settings page (theme: auto / light / dark).
+( new Coywolf_CBE_Settings() )->init();
 
 /**
  * Editor: register a language attribute on core/code and add the dropdown.

@@ -33,6 +33,10 @@ copy-to-clipboard button to the top-right corner.
 * Assets load only on singular posts/pages that contain a code block;
   Prism core and grammars are loaded with the `defer` strategy so they
   never block rendering.
+* Dark-mode aware out of the box — code blocks follow the visitor's
+  `prefers-color-scheme` automatically. Override from
+  **Tools → Code Blocks** to lock to "Always light" or "Always dark" for
+  every visitor.
 * In-WordPress updates: new versions are pulled from this project's
   GitHub Releases through the standard Dashboard → Updates flow (latest
   release cached for 6 hours).
@@ -110,6 +114,14 @@ with the `defer` strategy so it never blocks rendering.
 Nothing extra. Prism and the copy-button script are bundled with the
 plugin and served from your own origin, so a `script-src 'self'` policy
 is enough. There is no external CDN call from the front end.
+
+= How do I lock code blocks to light or dark mode for everyone? =
+
+Go to **Tools → Code Blocks** in WP Admin and pick **Always light** or
+**Always dark**. The default is **Auto**, which follows each visitor's
+OS / browser dark-mode preference. The lock is implemented in CSS —
+there is no inline `<style>` injected per request — so it composes
+cleanly with caching plugins.
 
 = Why is the language label not appearing on a particular block? =
 
