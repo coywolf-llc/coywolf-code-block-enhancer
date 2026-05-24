@@ -2,6 +2,7 @@
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
+- **Version:** 1.0.4
 - **Requires WordPress:** 6.3 or later
 - **Tested up to:** 6.7
 - **Requires PHP:** 7.4 or later
@@ -16,7 +17,7 @@ Coywolf Code Block Enhancer extends the built-in `core/code` block. In the edito
 - Adds a small language label in the top-left of each highlighted block (only when a language is set).
 - Adds an accessible copy-to-clipboard button — `aria-label`, a polite status region that announces "Copied to clipboard," and a visible "✓" state for two seconds after a successful copy. Falls back to `document.execCommand('copy')` on non-HTTPS or older browsers.
 - Assets load only on singular posts/pages that contain a code block; Prism core and grammars are loaded with the `defer` strategy so they never block rendering.
-- In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard Dashboard → Updates flow (latest release cached for 6 hours).
+- In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard **Dashboard → Updates** flow (latest release cached for 6 hours). Downloads are pinned to a GitHub host allowlist as a safety check.
 
 ### How it works
 
@@ -69,4 +70,17 @@ Releases are published to this plugin's [GitHub repository](https://github.com/c
 
 ## Changelog
 
-Canonical changelog entries live in [`readme.txt`](readme.txt) — that file is the WordPress-format source of truth and is updated automatically by the release workflow on each merged PR.
+### 1.0.4
+- Rename plugin title to 'Coywolf Code Block Enhancer' (#5).
+
+### 1.0.3
+- Mirror readme.txt into README.md for GitHub rendering (#4).
+
+### 1.0.2
+- Rewrite readme.txt in coywolf-link-checker format (#3).
+
+### 1.0.1
+- Add GitHub updater, uninstall cleanup, expanded readme (#2).
+
+### 1.0.0
+- Initial release.

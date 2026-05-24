@@ -76,21 +76,43 @@ jobs:
           sed -i -E "s|(Version:[[:space:]]+)${CURR//./\\.}\b|\1${NEW}|" code-block-enhancer.php
           sed -i -E "s|(define\(\s*'CBE_VERSION',\s*')${CURR//./\\.}(')|\1${NEW}\2|" code-block-enhancer.php
           sed -i -E "s|(Stable tag:[[:space:]]+)${CURR//./\\.}\b|\1${NEW}|" readme.txt
+          # readme.md mirror: bump the **Version:** bullet too (if present).
+          if [ -f readme.md ]; then
+            sed -i -E "s|(\*\*Version:\*\*[[:space:]]+)${CURR//./\\.}\b|\1${NEW}|" readme.md
+          fi
 
           python3 - <<'PY'
           import os, re
           new = os.environ["NEW"]
           title = os.environ["PR_TITLE"].replace("\r", " ").strip() or "Maintenance update"
           num = os.environ["PR_NUMBER"]
-          path = "readme.txt"
-          with open(path, "r", encoding="utf-8") as f:
-              content = f.read()
-          entry = f"\n= {new} =\n* {title} (#{num}).\n"
-          new_content, n = re.subn(r"(== Changelog ==\n)", r"\1" + entry, content, count=1)
-          if n == 0:
-              raise SystemExit("Could not find '== Changelog ==' in readme.txt")
-          with open(path, "w", encoding="utf-8") as f:
-              f.write(new_content)
+
+          targets = [
+              {
+                  "path": "readme.txt",
+                  "anchor": r"(== Changelog ==\n)",
+                  "entry":  f"\n= {new} =\n* {title} (#{num}).\n",
+                  "required": True,
+              },
+              {
+                  "path": "readme.md",
+                  "anchor": r"(## Changelog\n)",
+                  "entry":  f"\n### {new}\n- {title} (#{num}).\n",
+                  "required": False,
+              },
+          ]
+          for t in targets:
+              if not os.path.exists(t["path"]):
+                  if t["required"]:
+                      raise SystemExit(f"Missing required file: {t['path']}")
+                  continue
+              with open(t["path"], "r", encoding="utf-8") as f:
+                  content = f.read()
+              new_content, n = re.subn(t["anchor"], r"\1" + t["entry"], content, count=1)
+              if n == 0:
+                  raise SystemExit(f"Could not find changelog anchor in {t['path']}")
+              with open(t["path"], "w", encoding="utf-8") as f:
+                  f.write(new_content)
           PY
 
       - name: Commit and push bump
@@ -103,6 +125,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add code-block-enhancer.php readme.txt
+          [ -f readme.md ] && git add readme.md || true
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
