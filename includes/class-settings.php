@@ -541,6 +541,18 @@ final class Coywolf_CBE_Settings {
 			CBE_VERSION,
 			true
 		);
+
+		// Unsaved-changes guard. Loads in the footer like the rest of
+		// our admin JS; the redirect-after-save bootstrap at the top
+		// of the file runs immediately on parse so the post-save jump
+		// is fast.
+		wp_enqueue_script(
+			'cbe-settings-unsaved',
+			CBE_URL . 'js/settings-unsaved.js',
+			array(),
+			CBE_VERSION,
+			true
+		);
 		$payload = array(
 			'baseUrl' => esc_url_raw( CBE_URL . 'assets/themes/' ),
 			'themes'  => array(),
