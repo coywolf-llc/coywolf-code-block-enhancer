@@ -46,7 +46,8 @@ require_once __DIR__ . '/includes/class-settings.php';
 // Pull updates from GitHub Releases via the standard WP update flow.
 ( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
 
-// Tools → Code Blocks settings page (theme: auto / light / dark).
+// Tools → Code Blocks settings page (Theme: Coywolf Claude variants or
+// any of the 45 bundled Prism / prism-themes stylesheets).
 ( new Coywolf_CBE_Settings() )->init();
 
 /**
@@ -117,14 +118,28 @@ add_action( 'wp_enqueue_scripts', function () {
 		$args
 	);
 
-	// Token palette + copy-button styling.
+	// Layout / language label / copy-button chrome (always loaded with the
+	// plugin's own version stamp). Token colours live in the theme file.
 	wp_register_style( 'cbe-style', CBE_URL . 'css/code-block.css', array(), CBE_VERSION );
+
+	// Selected theme stylesheet (depends on cbe-style so token colours can
+	// reference the chrome's CSS custom properties / load after it). Theme
+	// files come from assets/themes/; the key is whitelisted by the
+	// settings sanitiser, so the path is safe to interpolate.
+	$theme = Coywolf_CBE_Settings::current_theme_entry();
+	wp_register_style(
+		'cbe-theme',
+		CBE_URL . 'assets/themes/' . $theme['file'],
+		array( 'cbe-style' ),
+		CBE_VERSION
+	);
 
 	// Styles must print in <head>, so enqueue here — NOT in render_block, which
 	// runs in the body after the head has already closed. Conditional so the CSS
 	// loads only on singular posts/pages that contain a code block.
 	if ( is_singular() && has_block( 'core/code' ) ) {
 		wp_enqueue_style( 'cbe-style' );
+		wp_enqueue_style( 'cbe-theme' );
 	}
 } );
 
