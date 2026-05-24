@@ -18,9 +18,12 @@ it highlights the code with Prism.js using a custom token palette, prints
 the language name as a small label on the block, and pins a
 copy-to-clipboard button to the top-right corner.
 
-* Adds a "Code language" dropdown to the core Code block's sidebar
-  (Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML,
-  plus "None" for plain text).
+* Adds a "Code language" dropdown to the core Code block's sidebar. A
+  baseline of 9 languages (Bash, CSS, HTML/Markup, JavaScript, JSON,
+  PHP, Python, SQL, YAML) is always loaded; an additional 40 grammars
+  can be toggled on via **Language packs** in Tools → Code Blocks
+  (Web/App dev — TypeScript, JSX/TSX, SCSS, Sass, Less, GraphQL — is
+  enabled by default).
 * Highlights code on the front end with Prism.js. Pick from 45 bundled
   themes — the 8 stock Prism themes (Prism Default, Coy, Dark, Funky,
   Okaidia, Solarized Light, Tomorrow Night, Twilight) plus 37 community

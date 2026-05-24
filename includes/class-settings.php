@@ -602,6 +602,18 @@ final class Coywolf_CBE_Settings {
 			)
 		);
 
+		// Language packs: array of pack keys. Default = ['web_app'].
+		register_setting(
+			self::GROUP,
+			Coywolf_CBE_Language_Packs::OPTION,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( 'Coywolf_CBE_Language_Packs', 'sanitize_packs' ),
+				'default'           => Coywolf_CBE_Language_Packs::default_packs(),
+				'show_in_rest'      => false,
+			)
+		);
+
 		add_settings_section(
 			'cbe_appearance',
 			__( 'Appearance', 'code-block-enhancer' ),
@@ -617,6 +629,54 @@ final class Coywolf_CBE_Settings {
 			'cbe_appearance',
 			array( 'label_for' => self::OPTION )
 		);
+
+		add_settings_section(
+			'cbe_languages',
+			__( 'Languages', 'code-block-enhancer' ),
+			array( $this, 'render_languages_section_intro' ),
+			self::PAGE
+		);
+
+		add_settings_field(
+			Coywolf_CBE_Language_Packs::OPTION,
+			__( 'Language packs', 'code-block-enhancer' ),
+			array( $this, 'render_language_packs_field' ),
+			self::PAGE,
+			'cbe_languages'
+		);
+	}
+
+	public function render_languages_section_intro() {
+		echo '<p>' . esc_html__(
+			'A baseline of 9 languages — Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML — is always loaded. Toggle the packs below to add more grammars to the editor dropdown and the front-end highlighter. Only enabled packs are downloaded by visitors; each pack costs roughly 1–6 KB per grammar.',
+			'code-block-enhancer'
+		) . '</p>';
+	}
+
+	public function render_language_packs_field() {
+		$active   = Coywolf_CBE_Language_Packs::active_packs();
+		$packs    = Coywolf_CBE_Language_Packs::all_packs();
+		$name     = Coywolf_CBE_Language_Packs::OPTION;
+		echo '<fieldset>';
+		// Empty hidden so unchecking every box still submits an empty array
+		// rather than dropping the key entirely.
+		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $name ) );
+		foreach ( $packs as $key => $pack ) {
+			$checked = in_array( $key, $active, true );
+			printf(
+				'<label style="display:block;margin:0.25rem 0;"><input type="checkbox" name="%1$s[]" value="%2$s" %3$s /> <strong>%4$s</strong> <span style="color:#646970;">— %5$s</span></label>',
+				esc_attr( $name ),
+				esc_attr( $key ),
+				checked( $checked, true, false ),
+				esc_html( $pack['label'] ),
+				esc_html( $pack['description'] )
+			);
+		}
+		echo '</fieldset>';
+		echo '<p class="description">' . esc_html__(
+			'Web / App dev is enabled by default on fresh installs. The other packs add backend languages, shell / ops formats, data and docs (Markdown / TOML / etc.), and query languages (PL/SQL, Cypher, MongoDB, SPARQL, Turtle).',
+			'code-block-enhancer'
+		) . '</p>';
 	}
 
 	public function maybe_migrate_legacy_option() {

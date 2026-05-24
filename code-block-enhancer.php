@@ -41,13 +41,15 @@ define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
 define( 'CBE_PLUGIN_FILE', __FILE__ );
 
 require_once __DIR__ . '/includes/class-github-updater.php';
+require_once __DIR__ . '/includes/class-language-packs.php';
 require_once __DIR__ . '/includes/class-settings.php';
 
 // Pull updates from GitHub Releases via the standard WP update flow.
 ( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
 
 // Tools → Code Blocks settings page (Theme: Default-palette variants or
-// any of the 45 bundled Prism / prism-themes stylesheets).
+// any of the 45 bundled Prism / prism-themes stylesheets) plus the
+// Language packs checkbox group.
 ( new Coywolf_CBE_Settings() )->init();
 
 /**
@@ -55,7 +57,9 @@ require_once __DIR__ . '/includes/class-settings.php';
  *
  * Loads only in the block editor. The save output is unchanged — the chosen
  * language lives in the block delimiter comment — so existing code blocks
- * never trigger block-validation errors.
+ * never trigger block-validation errors. The dropdown choices come from
+ * Coywolf_CBE_Language_Packs::active_language_choices() so they stay in
+ * sync with whatever packs the site admin has enabled in Tools → Code Blocks.
  */
 add_action( 'enqueue_block_editor_assets', function () {
 	wp_enqueue_script(
@@ -64,6 +68,11 @@ add_action( 'enqueue_block_editor_assets', function () {
 		array( 'wp-hooks', 'wp-compose', 'wp-element', 'wp-block-editor', 'wp-components' ),
 		CBE_VERSION,
 		true
+	);
+	wp_add_inline_script(
+		'cbe-code-language',
+		'window.cbeLanguageChoices = ' . wp_json_encode( Coywolf_CBE_Language_Packs::active_language_choices() ) . ';',
+		'before'
 	);
 } );
 
@@ -85,29 +94,30 @@ add_action( 'wp_enqueue_scripts', function () {
 		'in_footer' => true,
 	);
 
-	// Core first, then grammars. Each depends on the previous handle so they
-	// load in order (markup-templating before php; clike before languages that
-	// extend it). Add more grammars here and to the editor dropdown to support
-	// additional languages.
-	$chain = array(
-		'prism'                   => 'prism-core.min.js',
-		'prism-markup'            => 'prism-markup.min.js',
-		'prism-markup-templating' => 'prism-markup-templating.min.js', // required by php
-		'prism-clike'             => 'prism-clike.min.js',
-		'prism-css'               => 'prism-css.min.js',
-		'prism-javascript'        => 'prism-javascript.min.js',
-		'prism-bash'              => 'prism-bash.min.js',
-		'prism-json'              => 'prism-json.min.js',
-		'prism-php'               => 'prism-php.min.js',
-		'prism-python'            => 'prism-python.min.js',
-		'prism-sql'               => 'prism-sql.min.js',
-		'prism-yaml'              => 'prism-yaml.min.js',
+	// Core first, then the baseline grammars + every grammar contributed by
+	// an enabled language pack, topologically sorted so each grammar's
+	// dependencies are present before it loads. The list is built from
+	// Coywolf_CBE_Language_Packs which reads the `cbe_language_packs`
+	// option (default: ['web_app']).
+	$handles_in_order = array_merge(
+		array( 'prism' => 'prism-core.min.js' ),
+		array_combine(
+			array_map(
+				function ( $h ) { return 'prism-' . $h; },
+				Coywolf_CBE_Language_Packs::active_handles()
+			),
+			array_map(
+				function ( $h ) { return 'prism-' . $h . '.min.js'; },
+				Coywolf_CBE_Language_Packs::active_handles()
+			)
+		)
 	);
 	$prev = array();
-	foreach ( $chain as $handle => $file ) {
+	foreach ( $handles_in_order as $handle => $file ) {
 		wp_register_script( $handle, $prism . $file, $prev, '1.30.0', $args );
 		$prev = array( $handle ); // next grammar depends on this one
 	}
+	$chain = $handles_in_order;
 
 	// Copy button — depends on the last grammar, so all Prism is present first.
 	wp_register_script(
@@ -160,13 +170,14 @@ add_filter( 'render_block', function ( $content, $block ) {
 
 	wp_enqueue_script( 'cbe-code-blocks' ); // pulls in core + all grammars
 
-	// Allowlist the language: the editor dropdown only offers these values
-	// (see LANGUAGES in js/code-language.js), and block attrs are author-
-	// controlled in saved post content. WP_HTML_Tag_Processor sanitizes
-	// what we pass through, but an allowlist keeps the rendered class /
-	// data attribute predictable even if a future WP loosens that.
+	// Allowlist the language against whatever's actually loadable on the
+	// site right now (baseline + currently-enabled language packs).
+	// Block attrs are author-controlled in saved post content, so a
+	// stored language that isn't backed by a loaded grammar gets
+	// collapsed to empty rather than rendered as a dead `language-xxx`
+	// class.
 	$language = $block['attrs']['language'] ?? '';
-	$allowed  = array( 'bash', 'css', 'markup', 'javascript', 'json', 'php', 'python', 'sql', 'yaml' );
+	$allowed  = Coywolf_CBE_Language_Packs::active_language_handles();
 	if ( ! in_array( $language, $allowed, true ) ) {
 		$language = '';
 	}
