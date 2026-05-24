@@ -26,7 +26,7 @@ copy-to-clipboard button to the top-right corner.
   Solarized Light, Tomorrow Night, Twilight) plus 37 community themes
   from PrismJS/prism-themes (a11y Dark, Atom Dark, Dracula, Nord, One
   Dark, Night Owl, Synthwave '84, Gruvbox, Material, VS Code Dark+, and
-  more) — or the default **Coywolf Claude** palette.
+  more) — or the default **Claude** palette.
 * Adds a small language label in the top-left of each highlighted block
   (only when a language is set).
 * Adds an accessible copy-to-clipboard button — `aria-label`, a polite
@@ -36,10 +36,10 @@ copy-to-clipboard button to the top-right corner.
 * Assets load only on singular posts/pages that contain a code block;
   Prism core and grammars are loaded with the `defer` strategy so they
   never block rendering.
-* Dark-mode aware out of the box — with the default Coywolf Claude
+* Dark-mode aware out of the box — with the default Claude
   theme, code blocks follow the visitor's `prefers-color-scheme`
   automatically. Override from **Tools → Code Blocks** by switching to
-  **Coywolf Claude — Always light** / **Always dark**, or by picking
+  **Claude — Always light** / **Always dark**, or by picking
   any of the static Prism themes.
 * In-WordPress updates: new versions are pulled from this project's
   GitHub Releases through the standard Dashboard → Updates flow (latest
@@ -130,8 +130,8 @@ request.
 
 = How do I lock code blocks to light or dark mode for everyone? =
 
-If you're on the default **Coywolf Claude — Auto** theme, switch to
-**Coywolf Claude — Always light** or **Always dark** in
+If you're on the default **Claude — Auto** theme, switch to
+**Claude — Always light** or **Always dark** in
 **Tools → Code Blocks**. Picking any of the Prism themes also locks the
 appearance — those themes are static and don't react to OS dark mode.
 The lock is implemented in CSS — there is no inline `<style>` injected

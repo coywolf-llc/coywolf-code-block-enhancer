@@ -43,19 +43,19 @@ final class Coywolf_CBE_Settings {
 	public static function themes() {
 		$coywolf = array(
 			'coywolf-auto'  => array(
-				'label' => __( 'Coywolf Claude — Auto (follow OS dark mode)', 'code-block-enhancer' ),
+				'label' => __( 'Claude — Auto (follow OS dark mode)', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => null,
 			),
 			'coywolf-light' => array(
-				'label' => __( 'Coywolf Claude — Always light', 'code-block-enhancer' ),
+				'label' => __( 'Claude — Always light', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'light',
 			),
 			'coywolf-dark'  => array(
-				'label' => __( 'Coywolf Claude — Always dark', 'code-block-enhancer' ),
+				'label' => __( 'Claude — Always dark', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'dark',
@@ -297,7 +297,7 @@ final class Coywolf_CBE_Settings {
 		echo '</select>';
 
 		echo '<p class="description">' . esc_html__(
-			'The "Coywolf Claude — Auto" default follows each visitor\'s OS dark-mode preference. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
+			'The "Claude — Auto" default follows each visitor\'s OS dark-mode preference. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
 			'code-block-enhancer'
 		) . ' ';
 		printf(
