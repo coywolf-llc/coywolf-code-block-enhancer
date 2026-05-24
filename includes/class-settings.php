@@ -5,7 +5,7 @@
  * Stores one option, `cbe_theme`, with one of the keys defined in
  * {@see self::themes()}. The chosen theme is applied on the front end by
  * enqueueing the matching stylesheet under assets/themes/; the Coywolf
- * Claude variants (coywolf-auto / coywolf-light / coywolf-dark) also add a
+ * Default-palette variants (coywolf-auto / coywolf-light / coywolf-dark) also add a
  * `cbe-theme-light` / `cbe-theme-dark` body class so the lock-class
  * selectors in coywolf-claude.css beat its @media (prefers-color-scheme)
  * defaults.
@@ -43,19 +43,19 @@ final class Coywolf_CBE_Settings {
 	public static function themes() {
 		$coywolf = array(
 			'coywolf-auto'  => array(
-				'label' => __( 'Claude — Auto (follow OS dark mode)', 'code-block-enhancer' ),
+				'label' => __( 'Default — Auto (follow OS dark mode)', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => null,
 			),
 			'coywolf-light' => array(
-				'label' => __( 'Claude — Always light', 'code-block-enhancer' ),
+				'label' => __( 'Default — Always light', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'light',
 			),
 			'coywolf-dark'  => array(
-				'label' => __( 'Claude — Always dark', 'code-block-enhancer' ),
+				'label' => __( 'Default — Always dark', 'code-block-enhancer' ),
 				'file'  => 'coywolf-claude.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'dark',
@@ -66,7 +66,7 @@ final class Coywolf_CBE_Settings {
 		// assets/themes/LICENSE-prism). Minified files.
 		$builtin_group = __( 'Prism (built-in)', 'code-block-enhancer' );
 		$builtin       = array(
-			'prism'              => 'Default',
+			'prism'              => 'Prism Default',
 			'prism-coy'          => 'Coy',
 			'prism-dark'         => 'Dark',
 			'prism-funky'        => 'Funky',
@@ -423,7 +423,7 @@ final class Coywolf_CBE_Settings {
 		echo '</select>';
 
 		echo '<p class="description">' . esc_html__(
-			'The "Claude — Auto" default follows each visitor\'s OS dark-mode preference. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
+			'The "Default — Auto" palette follows each visitor\'s OS dark-mode preference and is selected on first install. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
 			'code-block-enhancer'
 		) . ' ';
 		echo '<strong>' . esc_html__( 'Changing the dropdown only updates the preview below — your site keeps the saved theme until you click Save Changes.', 'code-block-enhancer' ) . '</strong>';

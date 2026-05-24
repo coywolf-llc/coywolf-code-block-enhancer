@@ -15,11 +15,11 @@ Adds syntax highlighting and a copy-to-clipboard button to the native WordPress 
 Coywolf Code Block Enhancer extends the built-in `core/code` block. In the editor it adds a "Code language" dropdown to the block sidebar; on the front end it highlights the code with Prism.js using a custom token palette, prints the language name as a small label on the block, and pins a copy-to-clipboard button to the top-right corner.
 
 - Adds a "Code language" dropdown to the core Code block's sidebar (Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML, plus "None" for plain text).
-- Highlights code on the front end with Prism.js. Pick from **45 bundled themes** — the 8 stock Prism themes (Default, Coy, Dark, Funky, Okaidia, Solarized Light, Tomorrow Night, Twilight) plus 37 community themes from [PrismJS/prism-themes](https://github.com/PrismJS/prism-themes) (a11y Dark, Atom Dark, Dracula, Nord, One Dark, Night Owl, Synthwave '84, Gruvbox, Material, VS Code Dark+, and more) — or the default **Claude** palette.
+- Highlights code on the front end with Prism.js. Pick from **45 bundled themes** — the 8 stock Prism themes (Prism Default, Coy, Dark, Funky, Okaidia, Solarized Light, Tomorrow Night, Twilight) plus 37 community themes from [PrismJS/prism-themes](https://github.com/PrismJS/prism-themes) (a11y Dark, Atom Dark, Dracula, Nord, One Dark, Night Owl, Synthwave '84, Gruvbox, Material, VS Code Dark+, and more) — or the bundled **Default** palette (selected on first install).
 - Adds a small language label in the top-left of each highlighted block (only when a language is set).
 - Adds an accessible copy-to-clipboard button — `aria-label`, a polite status region that announces "Copied to clipboard," and a visible "✓" state for two seconds after a successful copy. Falls back to `document.execCommand('copy')` on non-HTTPS or older browsers.
 - Assets load only on singular posts/pages that contain a code block; Prism core and grammars are loaded with the `defer` strategy so they never block rendering.
-- **Dark-mode aware** out of the box — with the default Claude theme, code blocks follow the visitor's `prefers-color-scheme` automatically. Override the behaviour from **Tools → Code Blocks** by switching to **Claude — Always light** / **Always dark**, or by picking any of the static Prism themes.
+- **Dark-mode aware** out of the box — with the bundled **Default — Auto** theme (selected on first install), code blocks follow each visitor's `prefers-color-scheme` automatically. Override from **Tools → Code Blocks** by switching to **Default — Always light** / **Always dark**, or by picking any of the static Prism themes.
 - In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard **Dashboard → Updates** flow (latest release cached for 6 hours). Downloads are pinned to a GitHub host allowlist as a safety check.
 
 ### How it works
@@ -65,11 +65,11 @@ Nothing extra. Prism and the copy-button script are bundled with the plugin and 
 
 ### How do I change the theme?
 
-Go to **Tools → Code Blocks** in WP Admin. The **Code block theme** dropdown lists every bundled theme in three groups: **Coywolf** (Claude — Auto / Always light / Always dark), **Prism (built-in)**, and **Prism Themes (community)**. Below the dropdown a live preview pane re-renders a sample PHP snippet in the highlighted theme on every change — your site keeps the previously saved theme until you click **Save Changes**. The selected theme's stylesheet is enqueued only on posts that contain a code block; only one theme file is ever loaded per request.
+Go to **Tools → Code Blocks** in WP Admin. The **Code block theme** dropdown lists every bundled theme in three groups: **Coywolf** (Default — Auto / Always light / Always dark), **Prism (built-in)**, and **Prism Themes (community)**. Below the dropdown a live preview pane re-renders a sample PHP snippet in the highlighted theme on every change — your site keeps the previously saved theme until you click **Save Changes**. The selected theme's stylesheet is enqueued only on posts that contain a code block; only one theme file is ever loaded per request.
 
 ### How do I lock code blocks to light or dark mode for everyone?
 
-If you're on the default **Claude — Auto** theme, switch to **Claude — Always light** or **Always dark** in **Tools → Code Blocks**. Picking any of the Prism themes also locks the appearance — those themes are static and don't react to OS dark mode. The lock is implemented in CSS — there is no inline `<style>` injected per request — so it composes cleanly with caching plugins.
+If you're on the bundled **Default — Auto** theme (the first-install default), switch to **Default — Always light** or **Default — Always dark** in **Tools → Code Blocks**. Picking any of the Prism themes also locks the appearance — those themes are static and don't react to OS dark mode. The lock is implemented in CSS — there is no inline `<style>` injected per request — so it composes cleanly with caching plugins.
 
 ### Where do the Prism themes come from?
 
