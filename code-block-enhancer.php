@@ -1,17 +1,34 @@
 <?php
 /**
  * Plugin Name:       Code Block Enhancer
- * Plugin URI:        https://coywolf.com/
+ * Plugin URI:        https://github.com/coywolf-llc/coywolf-code-block-enhancer
  * Description:       Adds a language selector to the core Code block, Prism.js syntax highlighting with a custom token palette, and a copy-to-clipboard button. Assets load only on posts that contain a code block.
  * Version:           1.0.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Coywolf
+ * Author URI:        https://coywolf.com/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       code-block-enhancer
+ * Update URI:        https://github.com/coywolf-llc/coywolf-code-block-enhancer
  *
  * @package CodeBlockEnhancer
+ *
+ * Code Block Enhancer
+ * Copyright (C) 2026 Coywolf LLC
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License, version 2, as published
+ * by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, see https://www.gnu.org/licenses/gpl-2.0.html.
  */
 
 // Exit if accessed directly.
@@ -21,6 +38,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'CBE_VERSION', '1.0.0' );
 define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
+
+require_once __DIR__ . '/includes/class-github-updater.php';
+
+// Pull updates from GitHub Releases via the standard WP update flow.
+( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
 
 /**
  * Editor: register a language attribute on core/code and add the dropdown.
