@@ -1,4 +1,4 @@
-=== Code Block Enhancer ===
+=== Coywolf Code Block Enhancer ===
 Contributors: coywolf
 Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
@@ -12,7 +12,7 @@ Adds syntax highlighting and a copy-to-clipboard button to the native WordPress 
 
 == Description ==
 
-Code Block Enhancer extends the built-in `core/code` block. In the editor
+Coywolf Code Block Enhancer extends the built-in `core/code` block. In the editor
 it adds a "Code language" dropdown to the block sidebar; on the front end
 it highlights the code with Prism.js using a custom token palette, prints
 the language name as a small label on the block, and pins a

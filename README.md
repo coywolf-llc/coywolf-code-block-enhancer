@@ -1,4 +1,4 @@
-# Code Block Enhancer
+# Coywolf Code Block Enhancer
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
@@ -9,7 +9,7 @@ Adds syntax highlighting and a copy-to-clipboard button to the native WordPress 
 
 ## Description
 
-Code Block Enhancer extends the built-in `core/code` block. In the editor it adds a "Code language" dropdown to the block sidebar; on the front end it highlights the code with Prism.js using a custom token palette, prints the language name as a small label on the block, and pins a copy-to-clipboard button to the top-right corner.
+Coywolf Code Block Enhancer extends the built-in `core/code` block. In the editor it adds a "Code language" dropdown to the block sidebar; on the front end it highlights the code with Prism.js using a custom token palette, prints the language name as a small label on the block, and pins a copy-to-clipboard button to the top-right corner.
 
 - Adds a "Code language" dropdown to the core Code block's sidebar (Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML, plus "None" for plain text).
 - Highlights code on the front end with Prism.js using a custom colour palette scoped to `.wp-block-code` so nothing else on the page is restyled.
