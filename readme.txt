@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.10
+Stable tag: 1.0.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -162,6 +162,9 @@ standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
 are restricted to a GitHub host allowlist as a safety check.
 
 == Changelog ==
+
+= 1.0.11 =
+* Bundle all 45 Prism themes; theme picker on settings page (#12).
 
 = 1.0.10 =
 * Auto dark mode + Tools settings page for theme override (#11).

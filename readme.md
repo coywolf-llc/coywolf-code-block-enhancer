@@ -4,7 +4,7 @@
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
-- **Version:** 1.0.10
+- **Version:** 1.0.11
 - **Requires WordPress:** 6.3 or later
 - **Tested up to:** 6.7
 - **Requires PHP:** 7.4 or later
@@ -84,6 +84,9 @@ The label only renders when a language is set (the CSS rule is `.wp-block-code[d
 Releases are published to this plugin's [GitHub repository](https://github.com/coywolf-llc/coywolf-code-block-enhancer). The plugin checks GitHub Releases (cached for 6 hours) and offers any newer version through the standard WordPress **Dashboard → Updates** / "Update Now" flow. Downloads are restricted to a GitHub host allowlist as a safety check.
 
 ## Changelog
+
+### 1.0.11
+- Bundle all 45 Prism themes; theme picker on settings page (#12).
 
 ### 1.0.10
 - Auto dark mode + Tools settings page for theme override (#11).
