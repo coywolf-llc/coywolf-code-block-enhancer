@@ -1,119 +1,17 @@
 /* ==========================================================================
-   Code Block Enhancer styles
-   - Claude-style Prism token palette (light), with auto dark-mode
-   - Language label
-   - Copy-to-clipboard button
-   Scoped to .wp-block-code so nothing else on the page is restyled.
+   Coywolf Code Block Enhancer — chrome (always loaded)
+   - Layout / language label
+   - Copy-to-clipboard button (sized + positioned + transitions)
 
-   Theme model:
-   - Defaults below are the light palette.
-   - @media (prefers-color-scheme: dark) swaps to the dark palette so the
-     plugin follows the visitor's OS / browser preference out of the box.
-   - When the Tools → Code Blocks setting is set to "Always light" or
-     "Always dark", the plugin adds .cbe-theme-light / .cbe-theme-dark to
-     <body>. Those class selectors below have higher specificity than the
-     @media rule, so they win even when the OS says otherwise.
+   Token colours live in the chosen theme file under assets/themes/. The
+   copy-button colours read from CSS custom properties set by the theme;
+   they fall back to safe greys if no theme defines them.
    ========================================================================== */
-
-/* --- Light palette (default) ------------------------------------------ */
-
-.wp-block-code {
-	--cbe-bg:                transparent;
-	--cbe-fg:                inherit;
-	--cbe-label:             #8b949e;
-	--cbe-token-comment:     #6b7280;
-	--cbe-token-punctuation: #57606a;
-	--cbe-token-keyword:     #9333ea;
-	--cbe-token-function:    #2563eb;
-	--cbe-token-string:      #16a34a;
-	--cbe-token-variable:    #c2410c;
-	--cbe-token-number:      #0891b2;
-	--cbe-token-operator:    #24292e;
-	--cbe-copy-bg:           #fff;
-	--cbe-copy-fg:           #6b7280;
-	--cbe-copy-fg-hover:     #111;
-	--cbe-copy-bg-hover:     #f5f5f5;
-	--cbe-copy-border:       #DFE0E3;
-	--cbe-feedback-bg:       #111;
-	--cbe-feedback-fg:       #fff;
-}
-
-/* --- Dark palette: applied when the OS says dark, OR when forced ------ */
-
-@media (prefers-color-scheme: dark) {
-	.wp-block-code {
-		--cbe-bg:                #161b22;
-		--cbe-fg:                #e6edf3;
-		--cbe-label:             #6e7681;
-		--cbe-token-comment:     #8b949e;
-		--cbe-token-punctuation: #c9d1d9;
-		--cbe-token-keyword:     #c084fc;
-		--cbe-token-function:    #60a5fa;
-		--cbe-token-string:      #4ade80;
-		--cbe-token-variable:    #fb923c;
-		--cbe-token-number:      #22d3ee;
-		--cbe-token-operator:    #e6edf3;
-		--cbe-copy-bg:           #21262d;
-		--cbe-copy-fg:           #8b949e;
-		--cbe-copy-fg-hover:     #e6edf3;
-		--cbe-copy-bg-hover:     #30363d;
-		--cbe-copy-border:       #30363d;
-		--cbe-feedback-bg:       #e6edf3;
-		--cbe-feedback-fg:       #0d1117;
-	}
-}
-
-/* Override: site admin chose "Always light" — re-apply light values with
-   higher specificity than the @media rule. */
-body.cbe-theme-light .wp-block-code {
-	--cbe-bg:                transparent;
-	--cbe-fg:                inherit;
-	--cbe-label:             #8b949e;
-	--cbe-token-comment:     #6b7280;
-	--cbe-token-punctuation: #57606a;
-	--cbe-token-keyword:     #9333ea;
-	--cbe-token-function:    #2563eb;
-	--cbe-token-string:      #16a34a;
-	--cbe-token-variable:    #c2410c;
-	--cbe-token-number:      #0891b2;
-	--cbe-token-operator:    #24292e;
-	--cbe-copy-bg:           #fff;
-	--cbe-copy-fg:           #6b7280;
-	--cbe-copy-fg-hover:     #111;
-	--cbe-copy-bg-hover:     #f5f5f5;
-	--cbe-copy-border:       #DFE0E3;
-	--cbe-feedback-bg:       #111;
-	--cbe-feedback-fg:       #fff;
-}
-
-/* Override: site admin chose "Always dark". */
-body.cbe-theme-dark .wp-block-code {
-	--cbe-bg:                #161b22;
-	--cbe-fg:                #e6edf3;
-	--cbe-label:             #6e7681;
-	--cbe-token-comment:     #8b949e;
-	--cbe-token-punctuation: #c9d1d9;
-	--cbe-token-keyword:     #c084fc;
-	--cbe-token-function:    #60a5fa;
-	--cbe-token-string:      #4ade80;
-	--cbe-token-variable:    #fb923c;
-	--cbe-token-number:      #22d3ee;
-	--cbe-token-operator:    #e6edf3;
-	--cbe-copy-bg:           #21262d;
-	--cbe-copy-fg:           #8b949e;
-	--cbe-copy-fg-hover:     #e6edf3;
-	--cbe-copy-bg-hover:     #30363d;
-	--cbe-copy-border:       #30363d;
-	--cbe-feedback-bg:       #e6edf3;
-	--cbe-feedback-fg:       #0d1117;
-}
 
 /* --- Layout / language label ------------------------------------------- */
 
 .wp-block-code {
 	position: relative; /* anchor the language label */
-	background: var( --cbe-bg );
-	color: var( --cbe-fg );
 }
 
 /* Reserve space + show the language name (top-left) only when one is set. */
@@ -128,65 +26,8 @@ body.cbe-theme-dark .wp-block-code {
 	left: 1rem;
 	font-size: 0.75rem;
 	letter-spacing: 0.02em;
-	color: var( --cbe-label );
+	color: var( --cbe-label, #8b949e );
 	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-/* --- Prism token colours ----------------------------------------------- */
-
-.wp-block-code .token.comment,
-.wp-block-code .token.prolog,
-.wp-block-code .token.doctype,
-.wp-block-code .token.cdata {
-	color: var( --cbe-token-comment );
-}
-
-.wp-block-code .token.punctuation {
-	color: var( --cbe-token-punctuation );
-}
-
-.wp-block-code .token.keyword,
-.wp-block-code .token.builtin,
-.wp-block-code .token.atrule,
-.wp-block-code .token.important {
-	color: var( --cbe-token-keyword );
-}
-
-.wp-block-code .token.function,
-.wp-block-code .token.class-name,
-.wp-block-code .token.tag,
-.wp-block-code .token.selector {
-	color: var( --cbe-token-function );
-}
-
-.wp-block-code .token.string,
-.wp-block-code .token.char,
-.wp-block-code .token.attr-value,
-.wp-block-code .token.regex {
-	color: var( --cbe-token-string );
-}
-
-.wp-block-code .token.variable,
-.wp-block-code .token.attr-name,
-.wp-block-code .token.property {
-	color: var( --cbe-token-variable );
-}
-
-.wp-block-code .token.number,
-.wp-block-code .token.boolean,
-.wp-block-code .token.constant,
-.wp-block-code .token.symbol {
-	color: var( --cbe-token-number );
-}
-
-.wp-block-code .token.operator,
-.wp-block-code .token.entity,
-.wp-block-code .token.url {
-	color: var( --cbe-token-operator );
-}
-
-.wp-block-code .token.namespace {
-	opacity: 0.7;
 }
 
 /* --- Copy-to-clipboard button ------------------------------------------ */
@@ -205,17 +46,17 @@ body.cbe-theme-dark .wp-block-code {
 	width: 2rem;
 	height: 2rem;
 	padding: 0;
-	color: var( --cbe-copy-fg );
-	background: var( --cbe-copy-bg );
-	border: 0.5px solid var( --cbe-copy-border );
+	color: var( --cbe-copy-fg, #6b7280 );
+	background: var( --cbe-copy-bg, #fff );
+	border: 0.5px solid var( --cbe-copy-border, #DFE0E3 );
 	border-radius: 8px;
 	cursor: pointer;
 	transition: color 0.15s ease, background 0.15s ease;
 }
 
 .code-copy-btn:hover {
-	color: var( --cbe-copy-fg-hover );
-	background: var( --cbe-copy-bg-hover );
+	color: var( --cbe-copy-fg-hover, #111 );
+	background: var( --cbe-copy-bg-hover, #f5f5f5 );
 }
 
 .code-copy-btn:focus-visible {
@@ -234,9 +75,9 @@ body.cbe-theme-dark .wp-block-code {
 	right: 3rem;
 	padding: 0.2rem 0.5rem;
 	font-size: 0.8rem;
-	color: var( --cbe-feedback-fg );
+	color: var( --cbe-feedback-fg, #fff );
 	white-space: nowrap;
-	background: var( --cbe-feedback-bg );
+	background: var( --cbe-feedback-bg, #111 );
 	border-radius: 6px;
 	opacity: 0;
 	pointer-events: none;

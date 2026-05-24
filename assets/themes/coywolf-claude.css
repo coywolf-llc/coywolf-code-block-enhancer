@@ -1,0 +1,147 @@
+/* ==========================================================================
+   Coywolf Claude theme — token palette (light + auto-dark)
+   Scoped to .wp-block-code. Use this file as the theme stylesheet when the
+   Tools → Code Blocks "Theme" setting is one of coywolf-auto, coywolf-light,
+   or coywolf-dark. The lock-class overrides (body.cbe-theme-light/dark) win
+   over the @media (prefers-color-scheme: dark) block on specificity.
+   ========================================================================== */
+
+/* --- Light palette (default) ------------------------------------------ */
+
+.wp-block-code {
+	--cbe-bg:                transparent;
+	--cbe-fg:                inherit;
+	--cbe-label:             #8b949e;
+	--cbe-token-comment:     #6b7280;
+	--cbe-token-punctuation: #57606a;
+	--cbe-token-keyword:     #9333ea;
+	--cbe-token-function:    #2563eb;
+	--cbe-token-string:      #16a34a;
+	--cbe-token-variable:    #c2410c;
+	--cbe-token-number:      #0891b2;
+	--cbe-token-operator:    #24292e;
+	--cbe-copy-bg:           #fff;
+	--cbe-copy-fg:           #6b7280;
+	--cbe-copy-fg-hover:     #111;
+	--cbe-copy-bg-hover:     #f5f5f5;
+	--cbe-copy-border:       #DFE0E3;
+	--cbe-feedback-bg:       #111;
+	--cbe-feedback-fg:       #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+	.wp-block-code {
+		--cbe-bg:                #161b22;
+		--cbe-fg:                #e6edf3;
+		--cbe-label:             #6e7681;
+		--cbe-token-comment:     #8b949e;
+		--cbe-token-punctuation: #c9d1d9;
+		--cbe-token-keyword:     #c084fc;
+		--cbe-token-function:    #60a5fa;
+		--cbe-token-string:      #4ade80;
+		--cbe-token-variable:    #fb923c;
+		--cbe-token-number:      #22d3ee;
+		--cbe-token-operator:    #e6edf3;
+		--cbe-copy-bg:           #21262d;
+		--cbe-copy-fg:           #8b949e;
+		--cbe-copy-fg-hover:     #e6edf3;
+		--cbe-copy-bg-hover:     #30363d;
+		--cbe-copy-border:       #30363d;
+		--cbe-feedback-bg:       #e6edf3;
+		--cbe-feedback-fg:       #0d1117;
+	}
+}
+
+body.cbe-theme-light .wp-block-code {
+	--cbe-bg:                transparent;
+	--cbe-fg:                inherit;
+	--cbe-label:             #8b949e;
+	--cbe-token-comment:     #6b7280;
+	--cbe-token-punctuation: #57606a;
+	--cbe-token-keyword:     #9333ea;
+	--cbe-token-function:    #2563eb;
+	--cbe-token-string:      #16a34a;
+	--cbe-token-variable:    #c2410c;
+	--cbe-token-number:      #0891b2;
+	--cbe-token-operator:    #24292e;
+	--cbe-copy-bg:           #fff;
+	--cbe-copy-fg:           #6b7280;
+	--cbe-copy-fg-hover:     #111;
+	--cbe-copy-bg-hover:     #f5f5f5;
+	--cbe-copy-border:       #DFE0E3;
+	--cbe-feedback-bg:       #111;
+	--cbe-feedback-fg:       #fff;
+}
+
+body.cbe-theme-dark .wp-block-code {
+	--cbe-bg:                #161b22;
+	--cbe-fg:                #e6edf3;
+	--cbe-label:             #6e7681;
+	--cbe-token-comment:     #8b949e;
+	--cbe-token-punctuation: #c9d1d9;
+	--cbe-token-keyword:     #c084fc;
+	--cbe-token-function:    #60a5fa;
+	--cbe-token-string:      #4ade80;
+	--cbe-token-variable:    #fb923c;
+	--cbe-token-number:      #22d3ee;
+	--cbe-token-operator:    #e6edf3;
+	--cbe-copy-bg:           #21262d;
+	--cbe-copy-fg:           #8b949e;
+	--cbe-copy-fg-hover:     #e6edf3;
+	--cbe-copy-bg-hover:     #30363d;
+	--cbe-copy-border:       #30363d;
+	--cbe-feedback-bg:       #e6edf3;
+	--cbe-feedback-fg:       #0d1117;
+}
+
+/* --- Apply the variables ----------------------------------------------- */
+
+.wp-block-code {
+	background: var( --cbe-bg );
+	color:      var( --cbe-fg );
+}
+
+.wp-block-code[data-language]::before {
+	color: var( --cbe-label );
+}
+
+.wp-block-code .token.comment,
+.wp-block-code .token.prolog,
+.wp-block-code .token.doctype,
+.wp-block-code .token.cdata { color: var( --cbe-token-comment ); }
+
+.wp-block-code .token.punctuation { color: var( --cbe-token-punctuation ); }
+
+.wp-block-code .token.keyword,
+.wp-block-code .token.builtin,
+.wp-block-code .token.atrule,
+.wp-block-code .token.important { color: var( --cbe-token-keyword ); }
+
+.wp-block-code .token.function,
+.wp-block-code .token.class-name,
+.wp-block-code .token.tag,
+.wp-block-code .token.selector { color: var( --cbe-token-function ); }
+
+.wp-block-code .token.string,
+.wp-block-code .token.char,
+.wp-block-code .token.attr-value,
+.wp-block-code .token.regex { color: var( --cbe-token-string ); }
+
+.wp-block-code .token.variable,
+.wp-block-code .token.attr-name,
+.wp-block-code .token.property { color: var( --cbe-token-variable ); }
+
+.wp-block-code .token.number,
+.wp-block-code .token.boolean,
+.wp-block-code .token.constant,
+.wp-block-code .token.symbol { color: var( --cbe-token-number ); }
+
+.wp-block-code .token.operator,
+.wp-block-code .token.entity,
+.wp-block-code .token.url { color: var( --cbe-token-operator ); }
+
+.wp-block-code .token.namespace { opacity: 0.7; }
+
+/* Copy-button colours are also driven by the palette variables defined above. */
+.wp-block-code-themed .code-copy-btn,
+.wp-block-code + .code-copy-btn { /* selector chain not strictly needed; vars cascade */ }

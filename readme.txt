@@ -21,9 +21,12 @@ copy-to-clipboard button to the top-right corner.
 * Adds a "Code language" dropdown to the core Code block's sidebar
   (Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML,
   plus "None" for plain text).
-* Highlights code on the front end with Prism.js using a custom colour
-  palette scoped to `.wp-block-code` so nothing else on the page is
-  restyled.
+* Highlights code on the front end with Prism.js. Pick from 45 bundled
+  themes — the 8 stock Prism themes (Default, Coy, Dark, Funky, Okaidia,
+  Solarized Light, Tomorrow Night, Twilight) plus 37 community themes
+  from PrismJS/prism-themes (a11y Dark, Atom Dark, Dracula, Nord, One
+  Dark, Night Owl, Synthwave '84, Gruvbox, Material, VS Code Dark+, and
+  more) — or the default **Coywolf Claude** palette.
 * Adds a small language label in the top-left of each highlighted block
   (only when a language is set).
 * Adds an accessible copy-to-clipboard button — `aria-label`, a polite
@@ -33,10 +36,11 @@ copy-to-clipboard button to the top-right corner.
 * Assets load only on singular posts/pages that contain a code block;
   Prism core and grammars are loaded with the `defer` strategy so they
   never block rendering.
-* Dark-mode aware out of the box — code blocks follow the visitor's
-  `prefers-color-scheme` automatically. Override from
-  **Tools → Code Blocks** to lock to "Always light" or "Always dark" for
-  every visitor.
+* Dark-mode aware out of the box — with the default Coywolf Claude
+  theme, code blocks follow the visitor's `prefers-color-scheme`
+  automatically. Override from **Tools → Code Blocks** by switching to
+  **Coywolf Claude — Always light** / **Always dark**, or by picking
+  any of the static Prism themes.
 * In-WordPress updates: new versions are pulled from this project's
   GitHub Releases through the standard Dashboard → Updates flow (latest
   release cached for 6 hours).
@@ -115,13 +119,32 @@ Nothing extra. Prism and the copy-button script are bundled with the
 plugin and served from your own origin, so a `script-src 'self'` policy
 is enough. There is no external CDN call from the front end.
 
+= How do I change the theme? =
+
+Go to **Tools → Code Blocks** in WP Admin. The "Code block theme"
+dropdown lists every bundled theme in three groups: Coywolf (Auto /
+Always light / Always dark), Prism (built-in), and Prism Themes
+(community). The selected theme's stylesheet is enqueued only on posts
+that contain a code block; only one theme file is ever loaded per
+request.
+
 = How do I lock code blocks to light or dark mode for everyone? =
 
-Go to **Tools → Code Blocks** in WP Admin and pick **Always light** or
-**Always dark**. The default is **Auto**, which follows each visitor's
-OS / browser dark-mode preference. The lock is implemented in CSS —
-there is no inline `<style>` injected per request — so it composes
-cleanly with caching plugins.
+If you're on the default **Coywolf Claude — Auto** theme, switch to
+**Coywolf Claude — Always light** or **Always dark** in
+**Tools → Code Blocks**. Picking any of the Prism themes also locks the
+appearance — those themes are static and don't react to OS dark mode.
+The lock is implemented in CSS — there is no inline `<style>` injected
+per request — so it composes cleanly with caching plugins.
+
+= Where do the Prism themes come from? =
+
+The 8 stock themes are bundled from PrismJS/prism at v1.30.0 (MIT — see
+`assets/themes/LICENSE-prism`). The 37 community themes are bundled
+from PrismJS/prism-themes (MIT — see
+`assets/themes/LICENSE-prism-themes`). They are served from your own
+origin alongside the rest of the plugin's assets — no external request
+at runtime.
 
 = Why is the language label not appearing on a particular block? =
 
