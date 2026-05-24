@@ -9,7 +9,7 @@
 /* --- Light palette (default) ------------------------------------------ */
 
 .wp-block-code {
-	--cbe-bg:                transparent;
+	--cbe-bg:                #ffffff;
 	--cbe-fg:                inherit;
 	--cbe-label:             #8b949e;
 	--cbe-token-comment:     #6b7280;
@@ -31,7 +31,7 @@
 
 @media (prefers-color-scheme: dark) {
 	.wp-block-code {
-		--cbe-bg:                #161b22;
+		--cbe-bg:                #050520;
 		--cbe-fg:                #e6edf3;
 		--cbe-label:             #6e7681;
 		--cbe-token-comment:     #8b949e;
@@ -53,7 +53,7 @@
 }
 
 body.cbe-theme-light .wp-block-code {
-	--cbe-bg:                transparent;
+	--cbe-bg:                #ffffff;
 	--cbe-fg:                inherit;
 	--cbe-label:             #8b949e;
 	--cbe-token-comment:     #6b7280;
@@ -74,7 +74,7 @@ body.cbe-theme-light .wp-block-code {
 }
 
 body.cbe-theme-dark .wp-block-code {
-	--cbe-bg:                #161b22;
+	--cbe-bg:                #050520;
 	--cbe-fg:                #e6edf3;
 	--cbe-label:             #6e7681;
 	--cbe-token-comment:     #8b949e;
