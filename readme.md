@@ -1,3 +1,5 @@
+<img src=".wordpress-org/icon-256x256.png" alt="Coywolf Code Block Enhancer logo" width="128" />
+
 # Coywolf Code Block Enhancer
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
