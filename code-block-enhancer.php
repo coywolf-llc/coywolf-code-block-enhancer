@@ -94,36 +94,35 @@ add_action( 'wp_enqueue_scripts', function () {
 		'in_footer' => true,
 	);
 
-	// Core first, then the baseline grammars + every grammar contributed by
-	// an enabled language pack, topologically sorted so each grammar's
-	// dependencies are present before it loads. The list is built from
-	// Coywolf_CBE_Language_Packs which reads the `cbe_language_packs`
-	// option (default: ['web_app']).
-	$handles_in_order = array_merge(
-		array( 'prism' => 'prism-core.min.js' ),
-		array_combine(
-			array_map(
-				function ( $h ) { return 'prism-' . $h; },
-				Coywolf_CBE_Language_Packs::active_handles()
-			),
-			array_map(
-				function ( $h ) { return 'prism-' . $h . '.min.js'; },
-				Coywolf_CBE_Language_Packs::active_handles()
-			)
-		)
-	);
-	$prev = array();
-	foreach ( $handles_in_order as $handle => $file ) {
-		wp_register_script( $handle, $prism . $file, $prev, '1.30.0', $args );
-		$prev = array( $handle ); // next grammar depends on this one
-	}
-	$chain = $handles_in_order;
+	// Prism core.
+	wp_register_script( 'prism', $prism . 'prism-core.min.js', array(), '1.30.0', $args );
 
-	// Copy button — depends on the last grammar, so all Prism is present first.
+	// Each active grammar gets registered with its REAL dependency list
+	// (mapped to script handles) — not the cumulative chain we used to
+	// build. That way when render_block enqueues `prism-php`, WP only
+	// pulls in the grammars `prism-php` actually needs (markup,
+	// markup-templating, clike) plus core, not every grammar on the site.
+	foreach ( Coywolf_CBE_Language_Packs::active_handles_with_deps() as $handle => $requires ) {
+		$deps = array( 'prism' );
+		foreach ( $requires as $r ) {
+			$deps[] = 'prism-' . $r;
+		}
+		wp_register_script(
+			'prism-' . $handle,
+			$prism . 'prism-' . $handle . '.min.js',
+			array_values( array_unique( $deps ) ),
+			'1.30.0',
+			$args
+		);
+	}
+
+	// Copy button — no Prism dependency. Standalone copy-to-clipboard
+	// behaviour that reads code.textContent and doesn't care whether
+	// Prism has tokenised anything.
 	wp_register_script(
 		'cbe-code-blocks',
 		CBE_URL . 'js/code-blocks.js',
-		array( array_key_last( $chain ) ),
+		array(),
 		CBE_VERSION,
 		$args
 	);
@@ -168,10 +167,13 @@ add_filter( 'render_block', function ( $content, $block ) {
 		return $content;
 	}
 
-	wp_enqueue_script( 'cbe-code-blocks' ); // pulls in core + all grammars
+	// Copy button on every code block. No Prism dependency, so this
+	// alone doesn't pull in any grammar — pages with code blocks that
+	// have no language attribute download only this ~1 KB of JS.
+	wp_enqueue_script( 'cbe-code-blocks' );
 
 	// Allowlist the language against whatever's actually loadable on the
-	// site right now (baseline + currently-enabled language packs).
+	// site right now (baseline + the admin's per-language selection).
 	// Block attrs are author-controlled in saved post content, so a
 	// stored language that isn't backed by a loaded grammar gets
 	// collapsed to empty rather than rendered as a dead `language-xxx`
@@ -182,15 +184,25 @@ add_filter( 'render_block', function ( $content, $block ) {
 		$language = '';
 	}
 
-	if ( $language && class_exists( 'WP_HTML_Tag_Processor' ) ) {
-		$p = new WP_HTML_Tag_Processor( $content );
-		if ( $p->next_tag( 'pre' ) ) {
-			$p->set_attribute( 'data-language', $language );
+	if ( $language ) {
+		// Lazy-enqueue only the specific grammar this block needs. WP
+		// walks the registered deps and pulls in prism-core + any
+		// transitive grammars (e.g. prism-php → markup-templating →
+		// markup). Multiple code blocks with the same language enqueue
+		// once; different-language blocks each contribute their own
+		// grammar without re-loading the shared deps.
+		wp_enqueue_script( 'prism-' . $language );
+
+		if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
+			$p = new WP_HTML_Tag_Processor( $content );
+			if ( $p->next_tag( 'pre' ) ) {
+				$p->set_attribute( 'data-language', $language );
+			}
+			if ( $p->next_tag( 'code' ) ) {
+				$p->add_class( 'language-' . $language );
+			}
+			$content = $p->get_updated_html();
 		}
-		if ( $p->next_tag( 'code' ) ) {
-			$p->add_class( 'language-' . $language );
-		}
-		$content = $p->get_updated_html();
 	}
 
 	return $content;

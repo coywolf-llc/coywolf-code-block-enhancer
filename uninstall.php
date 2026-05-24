@@ -30,7 +30,8 @@ delete_site_transient( 'coywolf_cbe_gh_release_neg' );
 delete_option( 'cbe_theme' );
 delete_option( 'cbe_theme_mode' );
 delete_option( 'cbe_custom_theme' );
-delete_option( 'cbe_language_packs' );
+delete_option( 'cbe_language_packs' ); // legacy pre-per-language-toggle option
+delete_option( 'cbe_languages' );
 
 // Remove uploaded custom theme file (and the .htaccess hint), then try
 // to remove the now-empty directory. rmdir() is a no-op if the dir has

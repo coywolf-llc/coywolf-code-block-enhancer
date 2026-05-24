@@ -200,6 +200,7 @@ final class Coywolf_CBE_Settings {
 		add_action( 'admin_menu',            array( $this, 'register_menu' ) );
 		add_action( 'admin_init',            array( $this, 'register_setting' ) );
 		add_action( 'admin_init',            array( $this, 'maybe_migrate_legacy_option' ) );
+		add_action( 'admin_init',            array( 'Coywolf_CBE_Language_Packs', 'maybe_migrate_legacy_packs' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'admin_post_cbe_upload_custom_theme', array( $this, 'handle_upload' ) );
 		add_action( 'admin_post_cbe_remove_custom_theme', array( $this, 'handle_remove' ) );
@@ -602,14 +603,15 @@ final class Coywolf_CBE_Settings {
 			)
 		);
 
-		// Language packs: array of pack keys. Default = ['web_app'].
+		// Languages: flat array of enabled Prism handle strings. Default =
+		// the web_app pack's languages.
 		register_setting(
 			self::GROUP,
 			Coywolf_CBE_Language_Packs::OPTION,
 			array(
 				'type'              => 'array',
-				'sanitize_callback' => array( 'Coywolf_CBE_Language_Packs', 'sanitize_packs' ),
-				'default'           => Coywolf_CBE_Language_Packs::default_packs(),
+				'sanitize_callback' => array( 'Coywolf_CBE_Language_Packs', 'sanitize_languages' ),
+				'default'           => Coywolf_CBE_Language_Packs::default_languages(),
 				'show_in_rest'      => false,
 			)
 		);
@@ -654,27 +656,83 @@ final class Coywolf_CBE_Settings {
 	}
 
 	public function render_language_packs_field() {
-		$active   = Coywolf_CBE_Language_Packs::active_packs();
-		$packs    = Coywolf_CBE_Language_Packs::all_packs();
-		$name     = Coywolf_CBE_Language_Packs::OPTION;
-		echo '<fieldset>';
-		// Empty hidden so unchecking every box still submits an empty array
-		// rather than dropping the key entirely.
+		$enabled = Coywolf_CBE_Language_Packs::enabled_languages();
+		$packs   = Coywolf_CBE_Language_Packs::all_packs();
+		$name    = Coywolf_CBE_Language_Packs::OPTION;
+
+		// Empty hidden so unchecking every box still submits an empty
+		// array rather than dropping the key entirely (and falling back
+		// to the registered default on the next request).
 		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $name ) );
+
+		echo '<div class="cbe-lang-packs" style="max-width:48rem;">';
 		foreach ( $packs as $key => $pack ) {
-			$checked = in_array( $key, $active, true );
-			printf(
-				'<label style="display:block;margin:0.25rem 0;"><input type="checkbox" name="%1$s[]" value="%2$s" %3$s /> <strong>%4$s</strong> <span style="color:#646970;">— %5$s</span></label>',
-				esc_attr( $name ),
-				esc_attr( $key ),
-				checked( $checked, true, false ),
-				esc_html( $pack['label'] ),
-				esc_html( $pack['description'] )
-			);
+			$pack_handles = array_keys( $pack['langs'] );
+			$on_count     = count( array_intersect( $pack_handles, $enabled ) );
+			$total        = count( $pack_handles );
+			// Auto-expand any pack that has at least one language enabled,
+			// so the admin can see at a glance which entries are checked.
+			$open_attr    = $on_count > 0 ? ' open' : '';
+			?>
+			<details<?php echo $open_attr; ?> class="cbe-lang-pack" style="margin:0.5rem 0;border:1px solid #c3c4c7;border-radius:4px;padding:0.5rem 0.85rem;background:#fff;">
+				<summary style="cursor:pointer;padding:0.25rem 0;list-style:revert;">
+					<strong><?php echo esc_html( $pack['label'] ); ?></strong>
+					<span style="color:#646970;margin-left:0.5rem;font-weight:normal;">
+						(<?php
+						printf(
+							/* translators: 1: number enabled, 2: total in pack */
+							esc_html__( '%1$d of %2$d enabled', 'code-block-enhancer' ),
+							(int) $on_count,
+							(int) $total
+						);
+						?>)
+					</span>
+				</summary>
+				<p style="color:#646970;margin:0.5rem 0;">
+					<?php echo esc_html( $pack['description'] ); ?>
+				</p>
+				<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.25rem 1rem;margin:0.5rem 0 0.25rem;">
+					<?php foreach ( $pack['langs'] as $handle => $info ) :
+						$checked = in_array( $handle, $enabled, true );
+						?>
+						<label style="display:block;">
+							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $handle ); ?>" <?php checked( $checked, true ); ?> />
+							<?php echo esc_html( $info['label'] ); ?>
+						</label>
+					<?php endforeach; ?>
+				</div>
+				<p style="margin:0.5rem 0 0;font-size:0.85em;">
+					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="all"><?php esc_html_e( 'Select all in pack', 'code-block-enhancer' ); ?></a>
+					&nbsp;|&nbsp;
+					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="none"><?php esc_html_e( 'Clear pack', 'code-block-enhancer' ); ?></a>
+				</p>
+			</details>
+			<?php
 		}
-		echo '</fieldset>';
+		echo '</div>';
+
+		// Tiny inline JS for the per-pack "select all / clear" helpers.
+		// Self-contained — no separate JS file needed.
+		?>
+		<script>
+		( function () {
+			document.querySelectorAll( '.cbe-lang-pack' ).forEach( function ( pack ) {
+				pack.querySelectorAll( '[data-cbe-pack-action]' ).forEach( function ( link ) {
+					link.addEventListener( 'click', function ( e ) {
+						e.preventDefault();
+						var checked = link.getAttribute( 'data-cbe-pack-action' ) === 'all';
+						pack.querySelectorAll( 'input[type="checkbox"]' ).forEach( function ( cb ) {
+							cb.checked = checked;
+						} );
+					} );
+				} );
+			} );
+		} )();
+		</script>
+		<?php
+
 		echo '<p class="description">' . esc_html__(
-			'Web / App dev is enabled by default on fresh installs. The other packs add backend languages, shell / ops formats, data and docs (Markdown / TOML / etc.), and query languages (PL/SQL, Cypher, MongoDB, SPARQL, Turtle).',
+			'Tick the individual languages you want to appear in the Code block sidebar dropdown. Only ticked grammars are downloaded by visitors, and even then only when a page actually contains a code block in that language (the front-end loader fetches one grammar file per language used on the page, plus any Prism dependencies).',
 			'code-block-enhancer'
 		) . '</p>';
 	}
