@@ -101,6 +101,17 @@ body.cbe-theme-dark .wp-block-code {
 	color:      var( --cbe-fg );
 }
 
+/* The inner <code> element picks up a background + padding from the WP
+   admin's global `code { background: rgba(0,0,0,.07) }` rule (and from
+   some front-end themes), which would otherwise appear as a striped
+   inner panel sitting on top of the pre's --cbe-bg. Neutralise it so the
+   pre's background reads as one continuous panel. */
+.wp-block-code > code {
+	background: transparent;
+	color:      inherit;
+	padding:    0;
+}
+
 .wp-block-code[data-language]::before {
 	color: var( --cbe-label );
 }

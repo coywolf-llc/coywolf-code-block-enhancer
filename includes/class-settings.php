@@ -474,6 +474,18 @@ final class Coywolf_CBE_Settings {
 			CBE_VERSION
 		);
 
+		// Admin-only preview tweaks: turn the absolutely-positioned
+		// language label (top-left, paired with `padding-top: 2.75rem` on
+		// the front-end chrome) into a block-level label that sits flush
+		// above the code. That way `php` and the first line of code line
+		// up at the left edge with no big vertical gap — only matters
+		// inside .cbe-preview, the front-end layout is unchanged.
+		wp_add_inline_style(
+			'cbe-style',
+			'.cbe-preview .wp-block-code[data-language]{padding-top:.75rem}'
+			. '.cbe-preview .wp-block-code[data-language]::before{position:static;display:block;top:auto;left:auto;margin:0 0 .5rem 0;font-family:inherit}'
+		);
+
 		wp_enqueue_script(
 			'cbe-settings-preview',
 			CBE_URL . 'js/settings-preview.js',
