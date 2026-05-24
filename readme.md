@@ -166,3 +166,5 @@ Releases are published to this plugin's [GitHub repository](https://github.com/c
 
 ### 1.0.0
 - Initial release.
+
+
