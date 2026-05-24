@@ -49,17 +49,18 @@ to the `<pre>` and `language-xxx` to the `<code>` server-side — so KSES
 won't strip `data-*` attributes for non-admin authors, and there is no
 block-validation churn.
 
-Prism core and the per-language grammars are registered as deferred
-scripts with explicit dependency ordering (e.g. `markup-templating`
-before `php`, `clike` before languages that extend it) and loaded from
-cdnjs (`cdnjs.cloudflare.com`). The copy-button script depends on the
-last grammar in the chain, so all of Prism is present before the copy UI
-is wired up. Reading `code.textContent` returns the original source even
-after Prism wraps tokens in spans, so the copied text is unaffected by
-highlighting.
+Prism core and the per-language grammars are bundled under
+`assets/prism/` at v1.30.0 (MIT — see `assets/prism/LICENSE`). They
+register as deferred scripts with explicit dependency ordering (e.g.
+`markup-templating` before `php`, `clike` before languages that extend
+it). The copy-button script depends on the last grammar in the chain,
+so all of Prism is present before the copy UI is wired up. Reading
+`code.textContent` returns the original source even after Prism wraps
+tokens in spans, so the copied text is unaffected by highlighting.
 
-If your site enforces a Content Security Policy, allow
-`cdnjs.cloudflare.com` for scripts.
+Self-hosting Prism (rather than loading from a public CDN) keeps the
+third-party-script supply chain off the plugin's surface and means the
+plugin works on sites with strict CSPs or no external egress.
 
 == Installation ==
 
@@ -106,9 +107,9 @@ with the `defer` strategy so it never blocks rendering.
 
 = My site has a Content Security Policy. What do I need to allow? =
 
-Prism core and grammars are served from `cdnjs.cloudflare.com`. Allow
-that host in your `script-src` (and `script-src-elem` if you set it
-separately). All CSS is local to the plugin.
+Nothing extra. Prism and the copy-button script are bundled with the
+plugin and served from your own origin, so a `script-src 'self'` policy
+is enough. There is no external CDN call from the front end.
 
 = Why is the language label not appearing on a particular block? =
 
