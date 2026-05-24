@@ -211,7 +211,7 @@ final class Coywolf_CBE_GitHub_Updater {
 		}
 
 		$info                = new stdClass();
-		$info->name          = 'Code Block Enhancer';
+		$info->name          = 'Coywolf Code Block Enhancer';
 		$info->slug          = $this->plugin_slug;
 		$info->version       = $this->normalize_version( $release['tag_name'] );
 		$info->author        = '<a href="https://coywolf.com/">Coywolf</a>';

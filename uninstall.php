@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall cleanup for Code Block Enhancer.
+ * Uninstall cleanup for Coywolf Code Block Enhancer.
  *
  * Runs when the user deletes the plugin from WP Admin → Plugins. Removes
  * the only persistent state the plugin creates: the GitHub-updater
