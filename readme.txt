@@ -8,68 +8,122 @@ Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Enhances the WordPress core Code block with a language selector, Prism.js syntax highlighting (custom token palette), and a copy-to-clipboard button.
+Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
 == Description ==
 
-Code Block Enhancer extends the built-in `core/code` block. It adds a
-language picker in the block sidebar, highlights code on the front end with
-Prism.js using a custom colour palette, and renders a copy-to-clipboard
-button on each block.
+Code Block Enhancer extends the built-in `core/code` block. In the editor
+it adds a "Code language" dropdown to the block sidebar; on the front end
+it highlights the code with Prism.js using a custom token palette, prints
+the language name as a small label on the block, and pins a
+copy-to-clipboard button to the top-right corner.
 
-* Adds a "Code language" dropdown to the core Code block's sidebar.
-* Highlights code on the front end with Prism.js, using a custom colour palette.
-* Adds a copy-to-clipboard button with an accessible status message.
-* Assets load only on singular posts/pages that contain a code block.
-* Front-end scripts use the `defer` strategy so they don't block rendering.
-* In-WordPress updates: new versions are pulled from this project's GitHub
-  Releases through the standard Dashboard → Updates flow.
+* Adds a "Code language" dropdown to the core Code block's sidebar
+  (Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML,
+  plus "None" for plain text).
+* Highlights code on the front end with Prism.js using a custom colour
+  palette scoped to `.wp-block-code` so nothing else on the page is
+  restyled.
+* Adds a small language label in the top-left of each highlighted block
+  (only when a language is set).
+* Adds an accessible copy-to-clipboard button — `aria-label`, a polite
+  status region that announces "Copied to clipboard," and a visible "✓"
+  state for two seconds after a successful copy. Falls back to
+  `document.execCommand('copy')` on non-HTTPS or older browsers.
+* Assets load only on singular posts/pages that contain a code block;
+  Prism core and grammars are loaded with the `defer` strategy so they
+  never block rendering.
+* In-WordPress updates: new versions are pulled from this project's
+  GitHub Releases through the standard Dashboard → Updates flow (latest
+  release cached for 6 hours).
 
-== How it works ==
+= How it works =
 
-The chosen language is stored as a block attribute (in the block delimiter
-comment), so existing code blocks are never invalidated. On render, the
-language is applied to the markup server-side via WP_HTML_Tag_Processor
-(`data-language` on `<pre>`, `language-xxx` on `<code>`).
+The chosen language is stored as a `language` block attribute on
+`core/code`, which lives in the block delimiter comment rather than the
+saved markup. That means blocks without a language stay valid and
+existing content is never migrated.
 
-Prism core and the language grammars are loaded from cdnjs (an external
-CDN). If your site enforces a Content Security Policy, allow
+On render, the plugin uses `WP_HTML_Tag_Processor` to add `data-language`
+to the `<pre>` and `language-xxx` to the `<code>` server-side — so KSES
+won't strip `data-*` attributes for non-admin authors, and there is no
+block-validation churn.
+
+Prism core and the per-language grammars are registered as deferred
+scripts with explicit dependency ordering (e.g. `markup-templating`
+before `php`, `clike` before languages that extend it) and loaded from
+cdnjs (`cdnjs.cloudflare.com`). The copy-button script depends on the
+last grammar in the chain, so all of Prism is present before the copy UI
+is wired up. Reading `code.textContent` returns the original source even
+after Prism wraps tokens in spans, so the copied text is unaffected by
+highlighting.
+
+If your site enforces a Content Security Policy, allow
 `cdnjs.cloudflare.com` for scripts.
 
 == Installation ==
 
-1. Upload the `code-block-enhancer` folder to `/wp-content/plugins/`, or
-   upload the .zip via Plugins → Add New → Upload Plugin.
-2. Activate the plugin through the Plugins screen in WP Admin.
+1. Upload the `code-block-enhancer` folder to `/wp-content/plugins/`,
+   or upload the .zip via Plugins → Add New → Upload Plugin.
+2. Activate the plugin.
 3. Edit a post or page, add (or open) a Code block, and pick a language
-   from the block sidebar. The code is highlighted on the front end and a
-   "Copy" button appears in the top-right of the block.
+   from the "Code language" panel in the block sidebar. The code is
+   highlighted on the front end and a copy button appears in the
+   top-right of the block.
 
 == Frequently Asked Questions ==
 
 = Which languages are supported out of the box? =
 
-PHP, JavaScript, CSS, HTML/markup, Bash, JSON, Python, SQL, and YAML.
+Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, and
+YAML. The dropdown also includes "None (plain text)" to render a block
+without highlighting.
 
 = How do I add another language? =
 
-1. Add the Prism grammar to the `$chain` array in `code-block-enhancer.php`
-   (mind dependency order — e.g. `markup-templating` must load before
-   `php`).
-2. Add a matching entry to the `LANGUAGES` list in `js/code-language.js`
-   so it appears in the editor dropdown.
+Two places need to stay in sync:
+
+1. Add the Prism grammar to the `$chain` array in `code-block-enhancer.php`,
+   minding dependency order (e.g. `markup-templating` must load before
+   `php`; languages that extend `clike` need `clike` registered first).
+2. Add a matching entry — `{ label, value }` — to the `LANGUAGES` list in
+   `js/code-language.js` so it appears in the editor dropdown.
 
 = Will this break my existing code blocks? =
 
-No. The language is stored as a block attribute rather than baked into the
-saved markup, so blocks without a language remain valid and existing
-content is not migrated.
+No. The language is stored as a block attribute, not baked into the
+saved markup, so blocks without a language stay valid and the front-end
+language class is applied at render time. Existing content is not
+migrated and is unaffected.
+
+= Does Prism load on every page? =
+
+No. The token CSS only enqueues on singular posts/pages where
+`has_block( 'core/code' )` is true, and the Prism scripts are only
+enqueued from inside the `render_block` filter for `core/code` — so a
+page with no code block ships none of these assets. Prism is also loaded
+with the `defer` strategy so it never blocks rendering.
+
+= My site has a Content Security Policy. What do I need to allow? =
+
+Prism core and grammars are served from `cdnjs.cloudflare.com`. Allow
+that host in your `script-src` (and `script-src-elem` if you set it
+separately). All CSS is local to the plugin.
+
+= Why is the language label not appearing on a particular block? =
+
+The label only renders when a language is set (the CSS rule is
+`.wp-block-code[data-language]::before`). If the block was created
+before the plugin was installed, open it in the editor and pick a
+language from the sidebar so the `language` attribute is saved.
 
 = Where do plugin updates come from? =
 
-Releases are published to this plugin's GitHub repository. The plugin
-checks GitHub Releases (cached for 6 hours) and offers any newer version
-through the standard WordPress Dashboard → Updates / "Update Now" flow.
+Releases are published to this plugin's GitHub repository
+(`coywolf-llc/coywolf-code-block-enhancer`). The plugin checks GitHub
+Releases (cached for 6 hours) and offers any newer version through the
+standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
+are restricted to a GitHub host allowlist as a safety check.
 
 == Changelog ==
 
