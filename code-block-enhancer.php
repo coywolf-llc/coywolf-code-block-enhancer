@@ -66,7 +66,11 @@ add_action( 'enqueue_block_editor_assets', function () {
  * token/copy CSS in <head> when the post contains a code block.
  */
 add_action( 'wp_enqueue_scripts', function () {
-	$prism = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/';
+	// Prism is vendored under assets/prism/ at v1.30.0 (MIT — see
+	// assets/prism/LICENSE). Self-hosting eliminates the third-party CDN as
+	// a supply-chain surface: a compromised cdnjs path would otherwise have
+	// injected arbitrary JS into every page that loads a code block.
+	$prism = CBE_URL . 'assets/prism/';
 
 	// defer = non-render-blocking while preserving execution order across the
 	// dependency chain. async would NOT preserve order and would break grammars.
@@ -135,7 +139,17 @@ add_filter( 'render_block', function ( $content, $block ) {
 
 	wp_enqueue_script( 'cbe-code-blocks' ); // pulls in core + all grammars
 
+	// Allowlist the language: the editor dropdown only offers these values
+	// (see LANGUAGES in js/code-language.js), and block attrs are author-
+	// controlled in saved post content. WP_HTML_Tag_Processor sanitizes
+	// what we pass through, but an allowlist keeps the rendered class /
+	// data attribute predictable even if a future WP loosens that.
 	$language = $block['attrs']['language'] ?? '';
+	$allowed  = array( 'bash', 'css', 'markup', 'javascript', 'json', 'php', 'python', 'sql', 'yaml' );
+	if ( ! in_array( $language, $allowed, true ) ) {
+		$language = '';
+	}
+
 	if ( $language && class_exists( 'WP_HTML_Tag_Processor' ) ) {
 		$p = new WP_HTML_Tag_Processor( $content );
 		if ( $p->next_tag( 'pre' ) ) {
