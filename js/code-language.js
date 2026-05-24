@@ -5,19 +5,13 @@
 	const { InspectorControls } = wp.blockEditor;
 	const { PanelBody, SelectControl } = wp.components;
 
-	// Keep this list in sync with the grammar chain in code-block-enhancer.php.
-	const LANGUAGES = [
-		{ label: 'None (plain text)', value: '' },
-		{ label: 'Bash / Shell', value: 'bash' },
-		{ label: 'CSS', value: 'css' },
-		{ label: 'HTML / Markup', value: 'markup' },
-		{ label: 'JavaScript', value: 'javascript' },
-		{ label: 'JSON', value: 'json' },
-		{ label: 'PHP', value: 'php' },
-		{ label: 'Python', value: 'python' },
-		{ label: 'SQL', value: 'sql' },
-		{ label: 'YAML', value: 'yaml' },
-	];
+	// The list of choices is built server-side from the active baseline +
+	// language packs (Tools → Code Blocks → Language packs) and injected
+	// via wp_add_inline_script as window.cbeLanguageChoices. Each entry
+	// is { value, label } and the empty value is the "None" option.
+	const LANGUAGES = Array.isArray( window.cbeLanguageChoices ) && window.cbeLanguageChoices.length
+		? window.cbeLanguageChoices
+		: [ { value: '', label: 'None (plain text)' } ];
 
 	// 1. Register a `language` attribute on the core Code block.
 	addFilter(
