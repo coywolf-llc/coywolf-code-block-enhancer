@@ -46,8 +46,8 @@ require_once __DIR__ . '/includes/class-settings.php';
 // Pull updates from GitHub Releases via the standard WP update flow.
 ( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
 
-// Tools → Code Blocks settings page (Theme: Claude variants or any of
-// the 45 bundled Prism / prism-themes stylesheets).
+// Tools → Code Blocks settings page (Theme: Default-palette variants or
+// any of the 45 bundled Prism / prism-themes stylesheets).
 ( new Coywolf_CBE_Settings() )->init();
 
 /**
