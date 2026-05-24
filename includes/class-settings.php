@@ -633,6 +633,20 @@ final class Coywolf_CBE_Settings {
 			array( 'label_for' => self::OPTION )
 		);
 
+		// Custom-theme upload lives inside Appearance as a peer row.
+		// Its `render_custom_theme_field()` emits its own <form>
+		// elements that post to admin-post.php (file upload + remove),
+		// so they sit visually inside the Appearance form-table row
+		// but aren't part of the Settings API form's submission.
+		add_settings_field(
+			'cbe_custom_theme_ui',
+			__( 'Custom theme', 'code-block-enhancer' ),
+			array( $this, 'render_custom_theme_field' ),
+			self::PAGE,
+			'cbe_appearance'
+		);
+
+		// Languages comes after Appearance.
 		add_settings_section(
 			'cbe_languages',
 			__( 'Languages', 'code-block-enhancer' ),
@@ -663,8 +677,10 @@ final class Coywolf_CBE_Settings {
 
 		// Empty hidden so unchecking every box still submits an empty
 		// array rather than dropping the key entirely (and falling back
-		// to the registered default on the next request).
-		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $name ) );
+		// to the registered default on the next request). `form` attr
+		// binds this and every checkbox below to the Settings API form
+		// at the top of the page (same reason as the theme <select>).
+		printf( '<input type="hidden" name="%s[]" value="" form="cbe-theme-form" />', esc_attr( $name ) );
 
 		echo '<div class="cbe-lang-packs" style="max-width:48rem;">';
 		foreach ( $packs as $key => $pack ) {
@@ -697,7 +713,7 @@ final class Coywolf_CBE_Settings {
 						$checked = in_array( $handle, $enabled, true );
 						?>
 						<label style="display:block;">
-							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $handle ); ?>" <?php checked( $checked, true ); ?> />
+							<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[]" value="<?php echo esc_attr( $handle ); ?>" form="cbe-theme-form" <?php checked( $checked, true ); ?> />
 							<?php echo esc_html( $info['label'] ); ?>
 						</label>
 					<?php endforeach; ?>
@@ -808,7 +824,11 @@ final class Coywolf_CBE_Settings {
 			$by_group[ $info['group'] ][ $key ] = $info['label'];
 		}
 
-		printf( '<select id="%1$s" name="%1$s">', esc_attr( self::OPTION ) );
+		// `form` attribute binds this input to the Settings API form at
+		// the top of the page; the input itself lives outside the form
+		// so the Custom theme upload's own forms can sit inline as
+		// siblings without illegal HTML nesting.
+		printf( '<select id="%1$s" name="%1$s" form="cbe-theme-form">', esc_attr( self::OPTION ) );
 		foreach ( $by_group as $group => $options ) {
 			printf( '<optgroup label="%s">', esc_attr( $group ) );
 			foreach ( $options as $value => $label ) {
@@ -915,18 +935,27 @@ final class Coywolf_CBE_Settings {
 		);
 	}
 
-	private function render_custom_theme_section() {
+	/**
+	 * Renders inside the Appearance section's form-table as the second
+	 * row (after the theme dropdown). Emits its OWN standalone <form>
+	 * elements (upload + remove) that post to admin-post.php — they sit
+	 * inline among the Settings API rows but aren't part of the Settings
+	 * API form's submission (the page-level Settings API form uses HTML5
+	 * `form` attribute association, so its inputs live outside the form
+	 * and the custom-theme forms below can be free-standing siblings
+	 * without illegal nesting).
+	 */
+	public function render_custom_theme_field() {
 		$meta = self::custom_theme_meta();
 		$kb   = (int) round( self::CUSTOM_MAX_BYTES / 1024 );
 		?>
-		<h2><?php esc_html_e( 'Custom theme', 'code-block-enhancer' ); ?></h2>
-		<p>
+		<p style="margin-top:0;">
 			<?php
 			echo esc_html(
 				sprintf(
 					/* translators: %d is the upload size limit in KB. */
-					__( 'Upload a single .css file (up to %dKB). Only one custom theme is stored at a time — uploading a new file replaces the existing one. The file is checked for unsafe content (script tags, PHP open tags, javascript: URIs, expression(), etc.) before being written, and is served from your uploads directory with the rest of your media.', 'code-block-enhancer' ),
-					$kb
+					__( 'Upload a single .css file (up to %dKB). Only one custom theme is stored at a time — uploading a new file replaces the existing one. The file is checked for unsafe content (script tags, PHP open tags, javascript: URIs, expression(), etc.) before being written, and is served from your uploads directory with the rest of your media.', 'code-block-enhancer' )
+					, $kb
 				)
 			);
 			?>
@@ -953,62 +982,41 @@ final class Coywolf_CBE_Settings {
 			</p>
 		<?php endif; ?>
 
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="margin-bottom:1rem;">
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="margin:0.5rem 0 0.75rem;">
 			<input type="hidden" name="action" value="cbe_upload_custom_theme" />
 			<?php wp_nonce_field( 'cbe_upload_custom_theme' ); ?>
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row">
-						<label for="cbe_custom_theme_name"><?php esc_html_e( 'Theme name', 'code-block-enhancer' ); ?></label>
-					</th>
-					<td>
-						<input type="text"
-						       id="cbe_custom_theme_name"
-						       name="cbe_custom_theme_name"
-						       maxlength="60"
-						       class="regular-text"
-						       value="<?php echo esc_attr( $meta ? $meta['name'] : '' ); ?>"
-						       placeholder="<?php esc_attr_e( 'e.g. My Brand Dark', 'code-block-enhancer' ); ?>" />
-						<p class="description">
-							<?php esc_html_e( 'Shown as the dropdown label, e.g. "Custom — My Brand Dark". Optional — the filename is used if left blank. Max 60 characters.', 'code-block-enhancer' ); ?>
-						</p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<label for="cbe_custom_theme"><?php esc_html_e( 'CSS file', 'code-block-enhancer' ); ?></label>
-					</th>
-					<td>
-						<input type="file" id="cbe_custom_theme" name="cbe_custom_theme" accept=".css,text/css" required />
-						<p class="description">
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %d is the max upload size in KB. */
-									__( 'A single .css file, up to %dKB.', 'code-block-enhancer' ),
-									$kb
-								)
-							);
-							?>
-						</p>
-					</td>
-				</tr>
-			</table>
-			<p>
+			<p style="margin:0.25rem 0;">
+				<label for="cbe_custom_theme_name"><strong><?php esc_html_e( 'Theme name', 'code-block-enhancer' ); ?></strong></label><br />
+				<input type="text"
+				       id="cbe_custom_theme_name"
+				       name="cbe_custom_theme_name"
+				       maxlength="60"
+				       class="regular-text"
+				       value="<?php echo esc_attr( $meta ? $meta['name'] : '' ); ?>"
+				       placeholder="<?php esc_attr_e( 'e.g. My Brand Dark', 'code-block-enhancer' ); ?>" />
+				<span class="description" style="display:block;">
+					<?php esc_html_e( 'Shown as the dropdown label, e.g. "Custom — My Brand Dark". Optional — the filename is used if left blank. Max 60 characters.', 'code-block-enhancer' ); ?>
+				</span>
+			</p>
+			<p style="margin:0.5rem 0;">
+				<label for="cbe_custom_theme"><strong><?php esc_html_e( 'CSS file', 'code-block-enhancer' ); ?></strong></label><br />
+				<input type="file" id="cbe_custom_theme" name="cbe_custom_theme" accept=".css,text/css" required />
+			</p>
+			<p style="margin:0.5rem 0;">
 				<?php submit_button(
 					$meta ? __( 'Replace custom theme', 'code-block-enhancer' ) : __( 'Upload custom theme', 'code-block-enhancer' ),
 					'secondary',
-					'submit',
+					'cbe_upload_submit',
 					false
 				); ?>
 			</p>
 		</form>
 
 		<?php if ( $meta ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_attr( esc_js( __( 'Remove the custom theme? This cannot be undone.', 'code-block-enhancer' ) ) ); ?>');">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_attr( esc_js( __( 'Remove the custom theme? This cannot be undone.', 'code-block-enhancer' ) ) ); ?>');" style="margin:0;">
 				<input type="hidden" name="action" value="cbe_remove_custom_theme" />
 				<?php wp_nonce_field( 'cbe_remove_custom_theme' ); ?>
-				<?php submit_button( __( 'Remove custom theme', 'code-block-enhancer' ), 'delete', 'submit', false ); ?>
+				<?php submit_button( __( 'Remove custom theme', 'code-block-enhancer' ), 'delete', 'cbe_remove_submit', false ); ?>
 			</form>
 		<?php endif; ?>
 		<?php
@@ -1023,22 +1031,20 @@ final class Coywolf_CBE_Settings {
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<?php $this->render_notices(); ?>
 
+			<!--
+				Empty Settings API form: carries only the nonce / option_page
+				hidden fields that settings_fields() emits. Every actual input
+				(theme <select>, language checkboxes) lives outside this form
+				below and uses the HTML5 `form="cbe-theme-form"` attribute to
+				bind to it. That keeps the custom-theme upload/remove <form>
+				elements (which post to admin-post.php) as legal free-standing
+				siblings instead of nested forms.
+			-->
 			<form id="cbe-theme-form" method="post" action="options.php">
-				<?php
-				settings_fields( self::GROUP );
-				do_settings_sections( self::PAGE );
-				// No submit_button() here — the Save Changes button is
-				// rendered at the bottom of the page using the HTML5
-				// form="cbe-theme-form" attribute so it lives below the
-				// custom-theme upload section.
-				?>
+				<?php settings_fields( self::GROUP ); ?>
 			</form>
 
-			<hr style="margin:2rem 0;" />
-
-			<?php $this->render_custom_theme_section(); ?>
-
-			<hr style="margin:2rem 0;" />
+			<?php do_settings_sections( self::PAGE ); ?>
 
 			<?php
 			submit_button(
