@@ -300,7 +300,7 @@ final class Coywolf_CBE_GitHub_Updater {
 		$info->download_link = $this->pick_package_url( $release );
 		$info->last_updated  = isset( $release['published_at'] ) ? $release['published_at'] : '';
 		$info->sections      = array(
-			'description' => 'Adds a language selector to the core Code block, Prism.js syntax highlighting, and a copy-to-clipboard button. Assets load only on posts that contain a code block.',
+			'description' => 'Adds a Tools → Code Blocks option to apply Prism.js syntax highlighting and a copy code to clipboard button to the native WordPress Code block. Assets load only on posts that contain a code block.',
 			'changelog'   => $this->render_changelog( isset( $release['body'] ) ? $release['body'] : '' ),
 		);
 		$info->icons         = $this->icon_urls();
