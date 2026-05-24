@@ -503,16 +503,27 @@ final class Coywolf_CBE_Settings {
 			CBE_VERSION
 		);
 
-		// Admin-only preview tweaks: turn the absolutely-positioned
-		// language label (top-left, paired with `padding-top: 2.75rem` on
-		// the front-end chrome) into a block-level label that sits flush
-		// above the code. That way `php` and the first line of code line
-		// up at the left edge with no big vertical gap — only matters
-		// inside .cbe-preview, the front-end layout is unchanged.
+		// Admin-only preview tweaks (scoped to .cbe-preview so the
+		// front-end layout is untouched):
+		//
+		//   1. Turn the absolutely-positioned language label into a
+		//      block-level caption above the code so `php` and the first
+		//      code line line up at the left edge with no big gap.
+		//   2. Give the preview pre real left/right/bottom padding (front-
+		//      end themes usually do this; admin doesn't).
+		//   3. Force the inner <code> element to transparent + block with
+		//      no padding/margin. WP admin's `code { background:
+		//      rgba(0,0,0,.07); padding: 3px 5px; margin: 0 1px }` would
+		//      otherwise paint a striped grey panel behind each text run
+		//      inside the otherwise-white Default theme background.
+		//      `!important` is the simplest way to beat the admin rule
+		//      regardless of cascade order or any future `.wrap code`-
+		//      style selectors WP admin might add.
 		wp_add_inline_style(
 			'cbe-style',
-			'.cbe-preview .wp-block-code[data-language]{padding-top:.75rem}'
+			'.cbe-preview .wp-block-code[data-language]{padding:.75rem 1rem 1rem}'
 			. '.cbe-preview .wp-block-code[data-language]::before{position:static;display:block;top:auto;left:auto;margin:0 0 .5rem 0;font-family:inherit}'
+			. '.cbe-preview .wp-block-code code{background:transparent!important;padding:0!important;margin:0!important;display:block}'
 		);
 
 		wp_enqueue_script(
