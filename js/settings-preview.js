@@ -67,13 +67,21 @@
 		const name = entry.download || entry.file || 'theme.css';
 		a.setAttribute( 'href', href );
 		a.setAttribute( 'download', name );
-		// Re-render the "Download <code>name</code>" label. The static
-		// PHP-rendered version uses a localized format string; the
-		// dynamic version mirrors it in English. Translators of the
-		// original see the correct prefix on first paint; a dropdown
-		// change here re-paints in the source language. Acceptable for
-		// admin-only UI.
-		a.innerHTML = 'Download <code>' + name.replace( /[<>&"]/g, '' ) + '</code>';
+		// Re-render the "Download <code>name</code>" label using DOM
+		// APIs so the filename can never be parsed as HTML — defence
+		// in depth on top of the sanitize_file_name() pass the PHP
+		// side already applies. The static PHP-rendered version uses
+		// a localized format string; the dynamic re-render here
+		// mirrors it in English (translators see the correct prefix
+		// on first paint; a dropdown change re-paints in the source
+		// language — acceptable for an admin-only preview).
+		while ( a.firstChild ) {
+			a.removeChild( a.firstChild );
+		}
+		a.appendChild( document.createTextNode( 'Download ' ) );
+		const code = document.createElement( 'code' );
+		code.textContent = name;
+		a.appendChild( code );
 	}
 
 	function apply( key ) {
