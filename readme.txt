@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -72,6 +72,9 @@ checks GitHub Releases (cached for 6 hours) and offers any newer version
 through the standard WordPress Dashboard → Updates / "Update Now" flow.
 
 == Changelog ==
+
+= 1.0.1 =
+* Add GitHub updater, uninstall cleanup, expanded readme (#2).
 
 = 1.0.0 =
 * Initial release.
