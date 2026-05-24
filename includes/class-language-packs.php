@@ -1,30 +1,49 @@
 <?php
 /**
- * Language-pack registry for Coywolf Code Block Enhancer.
+ * Language registry for Coywolf Code Block Enhancer.
  *
  * Splits the Prism grammars into a small always-loaded BASELINE (the
- * original 9 languages the plugin shipped with) plus five optional
- * "packs" that each add a thematic group of grammars. The active pack
- * set is persisted as a `cbe_language_packs` option (array of pack
- * keys), with `web_app` selected by default for fresh installs.
+ * original 9 languages the plugin shipped with) plus five thematic
+ * "packs." The packs are a UI grouping only — what's actually persisted
+ * is a flat list of enabled language handles in the `cbe_languages`
+ * option, so the admin can toggle any subset of a pack's grammars on
+ * or off individually.
  *
  * Pack contents come from PrismJS/prism v1.30.0 components.json. A few
- * languages the user originally suggested (Vue, Svelte, XML, T-SQL)
- * are intentionally omitted: Prism doesn't ship standalone grammars
- * for Vue or Svelte; XML is just an alias for the baseline `markup`
+ * languages users sometimes ask about (Vue, Svelte, XML, T-SQL) are
+ * intentionally omitted: Prism doesn't ship standalone grammars for
+ * Vue or Svelte; XML is just an alias for the baseline `markup`
  * grammar; T-SQL syntax is covered by the baseline `sql` grammar.
  *
- * The public surface this class exposes:
+ * Public surface:
  *
- *   self::baseline_handles()   → list of Prism handles in the baseline
- *   self::all_packs()          → registry of pack metadata + langs
- *   self::active_packs()       → keys of packs currently enabled
- *   self::active_handles()     → baseline ∪ (langs in active packs),
- *                                topologically sorted so each
- *                                grammar's dependencies load first
+ *   self::all_packs()              → registry of pack metadata + langs
+ *   self::baseline_handles()       → list of always-loaded handles
+ *   self::baseline_label_handles() → baseline handles minus the deps-only
+ *                                    ones (markup-templating, clike)
+ *   self::default_languages()      → handles enabled on first install
+ *   self::enabled_languages()      → the admin's saved selection
+ *   self::sanitize_languages()     → whitelist sanitiser for the option
+ *   self::active_handles_with_deps()
+ *                                  → topologically-ordered map of
+ *                                    [handle => [requires_handles]] for
+ *                                    every grammar currently in play
+ *                                    (baseline + enabled selection +
+ *                                    transitive deps). Used by the
+ *                                    enqueue layer to register each
+ *                                    grammar with its real deps.
  *   self::active_language_choices()
- *                              → array suitable for the editor
- *                                dropdown ({ value, label } pairs)
+ *                                  → { value, label } pairs for the
+ *                                    editor dropdown
+ *   self::active_language_handles()
+ *                                  → flat list of selectable handles
+ *                                    (for render_block's allowlist)
+ *   self::maybe_migrate_legacy_packs()
+ *                                  → one-shot: expand the old
+ *                                    `cbe_language_packs` pack-keys
+ *                                    array into the new flat
+ *                                    `cbe_languages` handles array,
+ *                                    then delete the legacy option.
  *
  * @package CodeBlockEnhancer
  */
@@ -35,12 +54,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Coywolf_CBE_Language_Packs {
 
-	const OPTION       = 'cbe_language_packs';
-	const DEFAULT_PACK = 'web_app';
+	const OPTION              = 'cbe_languages';
+	const LEGACY_PACKS_OPTION = 'cbe_language_packs';
 
 	/**
-	 * Baseline grammars — always loaded regardless of pack selection.
-	 * Order matters: each entry's deps must come earlier in the list.
+	 * Baseline grammars — always loaded regardless of selection.
+	 * The `label` key is null for deps-only entries (markup-templating,
+	 * clike) which shouldn't appear in the editor dropdown.
 	 */
 	private static $baseline = array(
 		'markup'              => array( 'label' => 'HTML / Markup' ),
@@ -134,7 +154,6 @@ final class Coywolf_CBE_Language_Packs {
 		);
 	}
 
-	/** Public read-only access for the settings UI. */
 	public static function all_packs() {
 		return self::packs();
 	}
@@ -143,75 +162,141 @@ final class Coywolf_CBE_Language_Packs {
 		return array_keys( self::$baseline );
 	}
 
-	/** Default = web_app on fresh installs. */
-	public static function default_packs() {
-		return array( self::DEFAULT_PACK );
+	/**
+	 * Baseline handles that have a label (i.e. user-pickable in the
+	 * dropdown). Excludes deps-only entries.
+	 */
+	public static function baseline_label_handles() {
+		$out = array();
+		foreach ( self::$baseline as $h => $meta ) {
+			if ( null !== $meta['label'] ) {
+				$out[ $h ] = $meta['label'];
+			}
+		}
+		return $out;
 	}
 
-	/** Sanitise a stored value (array of valid pack keys). */
-	public static function sanitize_packs( $value ) {
-		if ( ! is_array( $value ) ) {
-			return self::default_packs();
+	/** Default enabled languages on first install = the web_app pack. */
+	public static function default_languages() {
+		$packs = self::packs();
+		return array_keys( $packs['web_app']['langs'] );
+	}
+
+	/** Whitelist of every handle in any pack — the universe of valid keys. */
+	private static function all_pack_handles() {
+		$out = array();
+		foreach ( self::packs() as $pack ) {
+			$out = array_merge( $out, array_keys( $pack['langs'] ) );
 		}
-		$valid = array_keys( self::packs() );
+		return $out;
+	}
+
+	/** Sanitise a stored value (array of valid handle strings). */
+	public static function sanitize_languages( $value ) {
+		if ( ! is_array( $value ) ) {
+			return self::default_languages();
+		}
+		$valid = self::all_pack_handles();
 		$out   = array();
-		foreach ( $value as $key ) {
-			if ( is_string( $key ) && in_array( $key, $valid, true ) && ! in_array( $key, $out, true ) ) {
-				$out[] = $key;
+		foreach ( $value as $h ) {
+			if ( is_string( $h ) && in_array( $h, $valid, true ) && ! in_array( $h, $out, true ) ) {
+				$out[] = $h;
 			}
 		}
 		return $out; // empty array is allowed (means "baseline only").
 	}
 
-	public static function active_packs() {
-		$stored = get_option( self::OPTION, null );
-		if ( null === $stored ) {
-			return self::default_packs();
+	public static function enabled_languages() {
+		$sentinel = '__cbe_unset__';
+		$stored   = get_option( self::OPTION, $sentinel );
+		if ( $sentinel === $stored ) {
+			return self::default_languages();
 		}
-		return self::sanitize_packs( $stored );
+		return self::sanitize_languages( $stored );
 	}
 
 	/**
-	 * Build the union of baseline + active-pack languages, then walk
-	 * each entry's `requires` list to pull in any transitive dep that
-	 * isn't already present. Returns a topologically-ordered list of
-	 * Prism handles (deps before dependents) suitable for emitting as
-	 * the wp_register_script chain.
+	 * One-shot migration from the v1.0.27 `cbe_language_packs` (array of
+	 * pack keys) to the new flat `cbe_languages` (array of handle
+	 * strings). Runs once on the first admin pageload after upgrade.
 	 *
-	 * @return string[] Prism handles in load order.
+	 * No-ops if the new option already has a stored row, OR if the
+	 * legacy option was never persisted.
 	 */
-	public static function active_handles() {
-		// Start with everything in the baseline.
-		$by_handle = array();
-		foreach ( self::$baseline as $h => $_meta ) {
-			$by_handle[ $h ] = array( 'requires' => self::baseline_requires( $h ) );
+	public static function maybe_migrate_legacy_packs() {
+		$sentinel = '__cbe_unset__';
+		if ( get_option( self::OPTION, $sentinel ) !== $sentinel ) {
+			return; // already on the new option.
 		}
 
-		// Layer on languages from active packs.
+		$legacy = get_option( self::LEGACY_PACKS_OPTION, $sentinel );
+		if ( $sentinel === $legacy ) {
+			return; // legacy never set; let default_languages() apply.
+		}
+
+		// Expand pack keys into the underlying language handles.
 		$packs = self::packs();
-		foreach ( self::active_packs() as $pack_key ) {
-			if ( empty( $packs[ $pack_key ] ) ) {
-				continue;
+		$langs = array();
+		if ( is_array( $legacy ) ) {
+			foreach ( $legacy as $pack_key ) {
+				if ( ! empty( $packs[ $pack_key ] ) ) {
+					$langs = array_merge( $langs, array_keys( $packs[ $pack_key ]['langs'] ) );
+				}
 			}
-			foreach ( $packs[ $pack_key ]['langs'] as $h => $info ) {
-				$by_handle[ $h ] = array( 'requires' => isset( $info['requires'] ) ? $info['requires'] : array() );
+		}
+		$langs = array_values( array_unique( $langs ) );
+
+		update_option( self::OPTION, $langs );
+		delete_option( self::LEGACY_PACKS_OPTION );
+	}
+
+	/**
+	 * Build the union of baseline + enabled languages, walk each entry's
+	 * `requires` list to pull in any transitive dep that isn't already
+	 * present, then topologically sort. Returns an ordered map of
+	 * [handle => [requires_handles]] suitable for wp_register_script.
+	 *
+	 * @return array<string, string[]>
+	 */
+	public static function active_handles_with_deps() {
+		$registry = array();
+		foreach ( self::$baseline as $h => $_meta ) {
+			$registry[ $h ] = array( 'requires' => self::baseline_requires( $h ) );
+		}
+
+		$enabled = self::enabled_languages();
+		foreach ( self::packs() as $pack ) {
+			foreach ( $pack['langs'] as $h => $info ) {
+				if ( in_array( $h, $enabled, true ) ) {
+					$registry[ $h ] = array( 'requires' => isset( $info['requires'] ) ? $info['requires'] : array() );
+				}
 			}
 		}
 
-		// Topologically sort. Iterative DFS so a hand-edited registry
-		// with a missing dep doesn't crash with PHP recursion limits.
+		// Iterative-safe DFS topo-sort.
 		$order   = array();
 		$visited = array();
-		foreach ( array_keys( $by_handle ) as $start ) {
-			self::visit( $start, $by_handle, $visited, $order );
+		foreach ( array_keys( $registry ) as $start ) {
+			self::visit( $start, $registry, $visited, $order );
 		}
-		return $order;
+
+		$out = array();
+		foreach ( $order as $h ) {
+			$out[ $h ] = $registry[ $h ]['requires'];
+		}
+		return $out;
 	}
 
 	/**
-	 * DFS visit for topological sort. Visited-state has three values:
-	 *   1 = in progress (cycle guard), 2 = done.
+	 * Backwards-compatible flat handle list (just the keys of
+	 * active_handles_with_deps()).
+	 *
+	 * @return string[]
 	 */
+	public static function active_handles() {
+		return array_keys( self::active_handles_with_deps() );
+	}
+
 	private static function visit( $handle, $registry, &$visited, &$order ) {
 		if ( isset( $visited[ $handle ] ) ) {
 			return;
@@ -228,11 +313,6 @@ final class Coywolf_CBE_Language_Packs {
 		$order[] = $handle;
 	}
 
-	/**
-	 * Dependencies hard-coded for baseline handles (they don't go
-	 * through the pack list, so we encode the same order the plugin
-	 * always shipped with).
-	 */
 	private static function baseline_requires( $handle ) {
 		$map = array(
 			'markup'              => array(),
@@ -251,38 +331,28 @@ final class Coywolf_CBE_Language_Packs {
 	}
 
 	/**
-	 * Build the { value, label } list the editor dropdown consumes.
-	 * Excludes baseline grammars that exist purely as dependencies
-	 * (markup-templating, clike) so they don't show up as user-pickable
-	 * choices.
+	 * { value, label } pairs for the editor dropdown. Baseline labels
+	 * first (A-Z), then each pack's enabled languages (A-Z within the
+	 * pack, packs in registry order).
 	 */
 	public static function active_language_choices() {
 		$choices = array(
 			array( 'value' => '', 'label' => __( 'None (plain text)', 'code-block-enhancer' ) ),
 		);
 
-		// Baseline first, in a tidy A-Z order by display label.
-		$base_labels = array();
-		foreach ( self::$baseline as $h => $meta ) {
-			if ( null === $meta['label'] ) {
-				continue;
-			}
-			$base_labels[ $h ] = $meta['label'];
-		}
-		asort( $base_labels );
-		foreach ( $base_labels as $h => $label ) {
+		$base = self::baseline_label_handles();
+		asort( $base );
+		foreach ( $base as $h => $label ) {
 			$choices[] = array( 'value' => $h, 'label' => $label );
 		}
 
-		// Then each active pack's languages, A-Z within the pack.
-		$packs = self::packs();
-		foreach ( self::active_packs() as $pack_key ) {
-			if ( empty( $packs[ $pack_key ] ) ) {
-				continue;
-			}
+		$enabled = self::enabled_languages();
+		foreach ( self::packs() as $pack ) {
 			$pack_labels = array();
-			foreach ( $packs[ $pack_key ]['langs'] as $h => $info ) {
-				$pack_labels[ $h ] = isset( $info['label'] ) ? $info['label'] : $h;
+			foreach ( $pack['langs'] as $h => $info ) {
+				if ( in_array( $h, $enabled, true ) ) {
+					$pack_labels[ $h ] = isset( $info['label'] ) ? $info['label'] : $h;
+				}
 			}
 			asort( $pack_labels );
 			foreach ( $pack_labels as $h => $label ) {
@@ -293,18 +363,13 @@ final class Coywolf_CBE_Language_Packs {
 		return $choices;
 	}
 
-	/**
-	 * Whitelist of every Prism handle that's currently loadable —
-	 * baseline + active packs. Used by render_block to validate the
-	 * stored `language` attribute on a per-block basis.
-	 */
 	public static function active_language_handles() {
-		$handles = array();
-		foreach ( self::active_language_choices() as $choice ) {
-			if ( '' !== $choice['value'] ) {
-				$handles[] = $choice['value'];
+		$out = array();
+		foreach ( self::active_language_choices() as $c ) {
+			if ( '' !== $c['value'] ) {
+				$out[] = $c['value'];
 			}
 		}
-		return $handles;
+		return $out;
 	}
 }
