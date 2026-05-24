@@ -727,7 +727,7 @@ final class Coywolf_CBE_Settings {
 			. "        )\n"
 			. "    );\n"
 			. "}, 10, 2 );\n";
-		?>
+
 		$current_entry = self::current_theme_entry();
 		$dl_url        = self::theme_url( $current_entry );
 		$dl_name       = ! empty( $current_entry['download'] )
