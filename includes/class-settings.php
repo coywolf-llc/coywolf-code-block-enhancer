@@ -357,14 +357,20 @@ final class Coywolf_CBE_Settings {
 			$this->redirect_with( $back, 'not_css' );
 		}
 
-		// Use WP's hardened MIME helper with an explicit allow-list.
+		// Confirm the tmp path is actually from a PHP upload (defence
+		// against a caller passing an arbitrary local path as tmp_name).
+		// We deliberately do NOT call wp_check_filetype_and_ext() here:
+		// it runs finfo_file() on the upload, and CSS has no magic-byte
+		// signature, so legitimate CSS files come back as `text/plain`
+		// and get rejected even though they're valid. The extension
+		// check above (.css required), the content sanitiser below
+		// (rejects script tags / PHP / javascript: / etc.), and the
+		// .htaccess `AddType text/css .css` we write into the uploads
+		// directory together cover the same risk surface without the
+		// false-positive.
 		$tmp = isset( $f['tmp_name'] ) ? (string) $f['tmp_name'] : '';
 		if ( '' === $tmp || ! is_uploaded_file( $tmp ) ) {
 			$this->redirect_with( $back, 'error' );
-		}
-		$check = wp_check_filetype_and_ext( $tmp, $name, array( 'css' => 'text/css' ) );
-		if ( empty( $check['ext'] ) || 'css' !== $check['ext'] ) {
-			$this->redirect_with( $back, 'bad_mime' );
 		}
 
 		$raw = file_get_contents( $tmp );
