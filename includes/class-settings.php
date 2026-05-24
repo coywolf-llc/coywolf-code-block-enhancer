@@ -58,39 +58,46 @@ final class Coywolf_CBE_Settings {
 	public static function themes() {
 		$coywolf = array(
 			'coywolf-auto'  => array(
-				'label' => __( 'Default — Auto (follow OS dark mode)', 'code-block-enhancer' ),
-				'file'  => 'default.css',
-				'group' => __( 'Coywolf', 'code-block-enhancer' ),
-				'lock'  => null,
+				'label'    => __( 'Default — Auto (follow OS dark mode)', 'code-block-enhancer' ),
+				'file'     => 'default.css',
+				'download' => 'default.css',
+				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'lock'     => null,
 			),
 			'coywolf-light' => array(
-				'label' => __( 'Default — Always light', 'code-block-enhancer' ),
-				'file'  => 'default.css',
-				'group' => __( 'Coywolf', 'code-block-enhancer' ),
-				'lock'  => 'light',
+				'label'    => __( 'Default — Always light', 'code-block-enhancer' ),
+				'file'     => 'default.css',
+				'download' => 'default.css',
+				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'lock'     => 'light',
 			),
 			'coywolf-dark'  => array(
-				'label' => __( 'Default — Always dark', 'code-block-enhancer' ),
-				'file'  => 'default.css',
-				'group' => __( 'Coywolf', 'code-block-enhancer' ),
-				'lock'  => 'dark',
+				'label'    => __( 'Default — Always dark', 'code-block-enhancer' ),
+				'file'     => 'default.css',
+				'download' => 'default.css',
+				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'lock'     => 'dark',
 			),
 		);
 
 		// Custom theme entry — only present if an upload exists on disk.
+		// Display label prefers the user-provided `name` then falls back to
+		// the original filename.
 		$custom = array();
 		$meta   = self::custom_theme_meta();
 		if ( null !== $meta ) {
+			$display_name = ! empty( $meta['name'] ) ? $meta['name'] : $meta['original_name'];
 			$custom[ self::CUSTOM_KEY ] = array(
-				'label' => sprintf(
-					/* translators: %s is the original filename of the uploaded CSS file. */
+				'label'    => sprintf(
+					/* translators: %s is the user-provided theme name (or the uploaded filename). */
 					__( 'Custom — %s', 'code-block-enhancer' ),
-					$meta['original_name']
+					$display_name
 				),
-				'file'  => null,
-				'url'   => self::custom_theme_url(),
-				'group' => __( 'Custom', 'code-block-enhancer' ),
-				'lock'  => null,
+				'file'     => null,
+				'url'      => self::custom_theme_url(),
+				'download' => $meta['original_name'],
+				'group'    => __( 'Custom', 'code-block-enhancer' ),
+				'lock'     => null,
 			);
 		}
 
@@ -109,11 +116,13 @@ final class Coywolf_CBE_Settings {
 		);
 		$builtin_themes = array();
 		foreach ( $builtin as $key => $label ) {
+			$file = $key . '.min.css';
 			$builtin_themes[ $key ] = array(
-				'label' => $label,
-				'file'  => $key . '.min.css',
-				'group' => $builtin_group,
-				'lock'  => null,
+				'label'    => $label,
+				'file'     => $file,
+				'download' => $file,
+				'group'    => $builtin_group,
+				'lock'     => null,
 			);
 		}
 
@@ -161,11 +170,13 @@ final class Coywolf_CBE_Settings {
 		);
 		$community_themes = array();
 		foreach ( $community as $key => $label ) {
+			$file = $key . '.css';
 			$community_themes[ $key ] = array(
-				'label' => $label,
-				'file'  => $key . '.css',
-				'group' => $community_group,
-				'lock'  => null,
+				'label'    => $label,
+				'file'     => $file,
+				'download' => $file,
+				'group'    => $community_group,
+				'lock'     => null,
 			);
 		}
 
@@ -228,7 +239,7 @@ final class Coywolf_CBE_Settings {
 	 * Re-validates that the file is still on disk so an externally-deleted
 	 * file doesn't keep the option entry alive.
 	 *
-	 * @return array{original_name:string, uploaded_at:int, byte_size:int}|null
+	 * @return array{original_name:string, name:string, uploaded_at:int, byte_size:int}|null
 	 */
 	public static function custom_theme_meta() {
 		$meta = get_option( self::CUSTOM_OPTION, null );
@@ -241,6 +252,7 @@ final class Coywolf_CBE_Settings {
 		}
 		return array(
 			'original_name' => (string) $meta['original_name'],
+			'name'          => isset( $meta['name'] ) ? (string) $meta['name'] : '',
 			'uploaded_at'   => isset( $meta['uploaded_at'] ) ? (int) $meta['uploaded_at'] : 0,
 			'byte_size'     => isset( $meta['byte_size'] ) ? (int) $meta['byte_size'] : (int) filesize( $path ),
 		);
@@ -383,14 +395,31 @@ final class Coywolf_CBE_Settings {
 			$this->redirect_with( $back, 'write_failed' );
 		}
 
+		// Optional user-provided display name. Sanitised hard (text only,
+		// 60-char cap) since this string is rendered as the dropdown label
+		// — esc_html on the way out, but we also keep the stored value tidy.
+		$display = isset( $_POST['cbe_custom_theme_name'] )
+			? sanitize_text_field( wp_unslash( (string) $_POST['cbe_custom_theme_name'] ) )
+			: '';
+		if ( strlen( $display ) > 60 ) {
+			$display = substr( $display, 0, 60 );
+		}
+
 		update_option(
 			self::CUSTOM_OPTION,
 			array(
 				'original_name' => sanitize_file_name( $name ),
+				'name'          => $display,
 				'uploaded_at'   => time(),
 				'byte_size'     => strlen( $clean ),
 			)
 		);
+
+		// Auto-activate the custom theme on a fresh upload so the user
+		// doesn't have to click Save Changes a second time just to see it
+		// take effect. Re-uploading while `custom` is already the active
+		// theme is a no-op for the option.
+		update_option( self::OPTION, self::CUSTOM_KEY );
 
 		$this->redirect_with( $back, 'ok' );
 	}
@@ -504,6 +533,10 @@ final class Coywolf_CBE_Settings {
 			} else {
 				$entry['file'] = $info['file'];
 			}
+			// Suggested filename for the download link in the preview pane.
+			$entry['download'] = ! empty( $info['download'] )
+				? $info['download']
+				: ( ! empty( $info['file'] ) ? $info['file'] : 'theme.css' );
 			$payload['themes'][ $key ] = $entry;
 		}
 		wp_add_inline_script(
@@ -678,11 +711,33 @@ final class Coywolf_CBE_Settings {
 			. "    );\n"
 			. "}, 10, 2 );\n";
 		?>
+		$current_entry = self::current_theme_entry();
+		$dl_url        = self::theme_url( $current_entry );
+		$dl_name       = ! empty( $current_entry['download'] )
+			? $current_entry['download']
+			: ( ! empty( $current_entry['file'] ) ? $current_entry['file'] : 'theme.css' );
+		?>
 		<div class="cbe-preview" style="max-width:48rem;margin-top:1rem;">
 			<p style="margin:0 0 0.5rem;color:#646970;font-size:0.85em;">
 				<?php esc_html_e( 'Preview', 'code-block-enhancer' ); ?>
 			</p>
 			<pre class="wp-block-code" data-language="php"><code class="language-php"><?php echo esc_html( $sample ); ?></code></pre>
+			<p style="margin:0.5rem 0 0;font-size:0.85em;">
+				<a id="cbe-preview-download"
+				   href="<?php echo esc_url( $dl_url ); ?>"
+				   download="<?php echo esc_attr( $dl_name ); ?>">
+					<?php
+					printf(
+						/* translators: %s is the CSS filename. */
+						esc_html__( 'Download %s', 'code-block-enhancer' ),
+						'<code>' . esc_html( $dl_name ) . '</code>'
+					);
+					?>
+				</a>
+				<span style="color:#646970;">
+					— <?php esc_html_e( 'edit it and re-upload as a custom theme below.', 'code-block-enhancer' ); ?>
+				</span>
+			</p>
 		</div>
 		<?php
 	}
@@ -744,7 +799,13 @@ final class Coywolf_CBE_Settings {
 		<?php if ( $meta ) : ?>
 			<p>
 				<strong><?php esc_html_e( 'Current custom theme:', 'code-block-enhancer' ); ?></strong>
-				<code><?php echo esc_html( $meta['original_name'] ); ?></code>
+				<?php
+				$display = ! empty( $meta['name'] ) ? $meta['name'] : $meta['original_name'];
+				echo esc_html( $display );
+				if ( ! empty( $meta['name'] ) ) {
+					echo ' <code>' . esc_html( $meta['original_name'] ) . '</code>';
+				}
+				?>
 				(<?php echo esc_html( size_format( $meta['byte_size'] ) ); ?>,
 				<?php
 				printf(
@@ -759,8 +820,45 @@ final class Coywolf_CBE_Settings {
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="margin-bottom:1rem;">
 			<input type="hidden" name="action" value="cbe_upload_custom_theme" />
 			<?php wp_nonce_field( 'cbe_upload_custom_theme' ); ?>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">
+						<label for="cbe_custom_theme_name"><?php esc_html_e( 'Theme name', 'code-block-enhancer' ); ?></label>
+					</th>
+					<td>
+						<input type="text"
+						       id="cbe_custom_theme_name"
+						       name="cbe_custom_theme_name"
+						       maxlength="60"
+						       class="regular-text"
+						       value="<?php echo esc_attr( $meta ? $meta['name'] : '' ); ?>"
+						       placeholder="<?php esc_attr_e( 'e.g. My Brand Dark', 'code-block-enhancer' ); ?>" />
+						<p class="description">
+							<?php esc_html_e( 'Shown as the dropdown label, e.g. "Custom — My Brand Dark". Optional — the filename is used if left blank. Max 60 characters.', 'code-block-enhancer' ); ?>
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<label for="cbe_custom_theme"><?php esc_html_e( 'CSS file', 'code-block-enhancer' ); ?></label>
+					</th>
+					<td>
+						<input type="file" id="cbe_custom_theme" name="cbe_custom_theme" accept=".css,text/css" required />
+						<p class="description">
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: %d is the max upload size in KB. */
+									__( 'A single .css file, up to %dKB.', 'code-block-enhancer' ),
+									$kb
+								)
+							);
+							?>
+						</p>
+					</td>
+				</tr>
+			</table>
 			<p>
-				<input type="file" name="cbe_custom_theme" accept=".css,text/css" required />
 				<?php submit_button(
 					$meta ? __( 'Replace custom theme', 'code-block-enhancer' ) : __( 'Upload custom theme', 'code-block-enhancer' ),
 					'secondary',
@@ -788,17 +886,33 @@ final class Coywolf_CBE_Settings {
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			<?php $this->render_notices(); ?>
-			<form method="post" action="options.php">
+
+			<form id="cbe-theme-form" method="post" action="options.php">
 				<?php
 				settings_fields( self::GROUP );
 				do_settings_sections( self::PAGE );
-				submit_button();
+				// No submit_button() here — the Save Changes button is
+				// rendered at the bottom of the page using the HTML5
+				// form="cbe-theme-form" attribute so it lives below the
+				// custom-theme upload section.
 				?>
 			</form>
 
 			<hr style="margin:2rem 0;" />
 
 			<?php $this->render_custom_theme_section(); ?>
+
+			<hr style="margin:2rem 0;" />
+
+			<?php
+			submit_button(
+				null,
+				'primary large',
+				'submit',
+				true,
+				array( 'form' => 'cbe-theme-form' )
+			);
+			?>
 		</div>
 		<?php
 	}

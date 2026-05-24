@@ -59,6 +59,23 @@
 		return '';
 	}
 
+	function updateDownloadLink( entry, href ) {
+		const a = document.getElementById( 'cbe-preview-download' );
+		if ( ! a || ! entry ) {
+			return;
+		}
+		const name = entry.download || entry.file || 'theme.css';
+		a.setAttribute( 'href', href );
+		a.setAttribute( 'download', name );
+		// Re-render the "Download <code>name</code>" label. The static
+		// PHP-rendered version uses a localized format string; the
+		// dynamic version mirrors it in English. Translators of the
+		// original see the correct prefix on first paint; a dropdown
+		// change here re-paints in the source language. Acceptable for
+		// admin-only UI.
+		a.innerHTML = 'Download <code>' + name.replace( /[<>&"]/g, '' ) + '</code>';
+	}
+
 	function apply( key ) {
 		const entry = themes[ key ];
 		const href  = urlFor( entry );
@@ -77,6 +94,7 @@
 		}
 
 		setLockClass( entry.lock || null );
+		updateDownloadLink( entry, href );
 	}
 
 	apply( select.value );
