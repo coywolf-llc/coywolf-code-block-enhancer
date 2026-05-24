@@ -141,14 +141,140 @@ final class Coywolf_CBE_Settings {
 	}
 
 	public function init() {
-		add_action( 'admin_menu', array( $this, 'register_menu' ) );
-		add_action( 'admin_init', array( $this, 'register_setting' ) );
-		add_action( 'admin_init', array( $this, 'maybe_migrate_legacy_option' ) );
-		add_filter( 'body_class', array( $this, 'maybe_add_lock_class' ) );
+		add_action( 'admin_menu',            array( $this, 'register_menu' ) );
+		add_action( 'admin_init',            array( $this, 'register_setting' ) );
+		add_action( 'admin_init',            array( $this, 'maybe_migrate_legacy_option' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_filter( 'admin_body_class',      array( $this, 'admin_body_class_for_lock' ) );
+		add_filter( 'body_class',            array( $this, 'maybe_add_lock_class' ) );
 		add_filter(
 			'plugin_action_links_' . plugin_basename( CBE_PLUGIN_FILE ),
 			array( $this, 'add_settings_action_link' )
 		);
+	}
+
+	/**
+	 * Hook suffix added by add_submenu_page() for this page. Used to scope
+	 * admin_enqueue_scripts so we only load Prism / theme CSS on our screen.
+	 */
+	private function page_hook_suffix() {
+		return 'tools_page_' . self::PAGE;
+	}
+
+	/**
+	 * Enqueue the live-preview assets on Tools → Code Blocks only.
+	 *
+	 * Mirrors the front-end enqueue chain: Prism core + grammars, the
+	 * copy-button script, the chrome CSS, and the currently-saved theme
+	 * CSS. The theme CSS handle is well-known (`cbe-preview-theme-css`)
+	 * so the preview JS can rewrite its href on every dropdown change
+	 * without enqueueing a second link tag.
+	 *
+	 * Nothing here writes to the database — the option only updates when
+	 * the Settings API form submits via Save Changes.
+	 *
+	 * @param string $hook_suffix Current admin page hook suffix.
+	 */
+	public function enqueue_admin_assets( $hook_suffix ) {
+		if ( $hook_suffix !== $this->page_hook_suffix() ) {
+			return;
+		}
+
+		$prism_url   = CBE_URL . 'assets/prism/';
+		$themes_url  = CBE_URL . 'assets/themes/';
+
+		// Same dependency chain used on the front end. No `defer` strategy
+		// — admin pages don't need the rendering optimisation and we want
+		// Prism's DOMContentLoaded auto-highlight to fire normally.
+		$chain = array(
+			'cbe-prism'                   => 'prism-core.min.js',
+			'cbe-prism-markup'            => 'prism-markup.min.js',
+			'cbe-prism-markup-templating' => 'prism-markup-templating.min.js',
+			'cbe-prism-clike'             => 'prism-clike.min.js',
+			'cbe-prism-css'               => 'prism-css.min.js',
+			'cbe-prism-javascript'        => 'prism-javascript.min.js',
+			'cbe-prism-bash'              => 'prism-bash.min.js',
+			'cbe-prism-json'              => 'prism-json.min.js',
+			'cbe-prism-php'               => 'prism-php.min.js',
+			'cbe-prism-python'            => 'prism-python.min.js',
+			'cbe-prism-sql'               => 'prism-sql.min.js',
+			'cbe-prism-yaml'              => 'prism-yaml.min.js',
+		);
+		$prev = array();
+		foreach ( $chain as $handle => $file ) {
+			wp_enqueue_script( $handle, $prism_url . $file, $prev, '1.30.0', true );
+			$prev = array( $handle );
+		}
+
+		// Copy button: depends on the last grammar so all of Prism is present.
+		wp_enqueue_script(
+			'cbe-code-blocks',
+			CBE_URL . 'js/code-blocks.js',
+			array( array_key_last( $chain ) ),
+			CBE_VERSION,
+			true
+		);
+
+		// Chrome (layout / language label / copy button) + saved theme CSS.
+		wp_enqueue_style( 'cbe-style', CBE_URL . 'css/code-block.css', array(), CBE_VERSION );
+
+		$current_entry = self::current_theme_entry();
+		wp_enqueue_style(
+			'cbe-preview-theme-css',
+			$themes_url . $current_entry['file'],
+			array( 'cbe-style' ),
+			CBE_VERSION
+		);
+
+		// Live-preview controller. Localize the full theme registry (just
+		// file + lock — labels are already in the dropdown DOM) so the
+		// dropdown change handler can swap stylesheets client-side.
+		wp_enqueue_script(
+			'cbe-settings-preview',
+			CBE_URL . 'js/settings-preview.js',
+			array(),
+			CBE_VERSION,
+			true
+		);
+		$payload = array(
+			'baseUrl' => esc_url_raw( $themes_url ),
+			'themes'  => array(),
+		);
+		foreach ( self::themes() as $key => $info ) {
+			$payload['themes'][ $key ] = array(
+				'file' => $info['file'],
+				'lock' => $info['lock'],
+			);
+		}
+		wp_add_inline_script(
+			'cbe-settings-preview',
+			'window.cbeSettingsPreview = ' . wp_json_encode( $payload ) . ';',
+			'before'
+		);
+	}
+
+	/**
+	 * Mirror maybe_add_lock_class() onto the admin <body> so the preview
+	 * pane on our settings page renders the saved theme's locked palette
+	 * correctly before the preview JS runs.
+	 *
+	 * Scoped to our hook suffix to avoid polluting other admin screens.
+	 *
+	 * @param string $classes Space-separated body classes.
+	 * @return string
+	 */
+	public function admin_body_class_for_lock( $classes ) {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || $screen->id !== $this->page_hook_suffix() ) {
+			return $classes;
+		}
+		$entry = self::current_theme_entry();
+		if ( 'light' === $entry['lock'] ) {
+			$classes .= ' cbe-theme-light';
+		} elseif ( 'dark' === $entry['lock'] ) {
+			$classes .= ' cbe-theme-dark';
+		}
+		return $classes;
 	}
 
 	public function register_menu() {
@@ -300,12 +426,39 @@ final class Coywolf_CBE_Settings {
 			'The "Claude — Auto" default follows each visitor\'s OS dark-mode preference. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
 			'code-block-enhancer'
 		) . ' ';
-		printf(
-			/* translators: %s is a link to the Prism themes preview page. */
-			esc_html__( 'See live previews on the %s preview page.', 'code-block-enhancer' ),
-			'<a href="https://prismjs.com/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Prism', 'code-block-enhancer' ) . '</a>'
-		);
+		echo '<strong>' . esc_html__( 'Changing the dropdown only updates the preview below — your site keeps the saved theme until you click Save Changes.', 'code-block-enhancer' ) . '</strong>';
 		echo '</p>';
+
+		// Live preview pane. The HTML is the same shape the front-end
+		// `core/code` block renders (`<pre class="wp-block-code" data-language="…">
+		// <code class="language-…">…</code></pre>`), so the plugin's chrome
+		// CSS + Prism + the selected theme CSS apply unchanged. js/settings-preview.js
+		// rewrites the <link href> on every dropdown change; no DB write
+		// happens until the form submits.
+		$sample = "<?php\n"
+			. "// Send a thank-you email when a new comment is approved.\n"
+			. "add_action( 'comment_post', function ( int \$id, \$approved ) {\n"
+			. "    if ( 1 !== \$approved ) {\n"
+			. "        return;\n"
+			. "    }\n"
+			. "    \$comment = get_comment( \$id );\n"
+			. "    wp_mail(\n"
+			. "        \$comment->comment_author_email,\n"
+			. "        __( 'Thanks for your comment!', 'mytheme' ),\n"
+			. "        sprintf(\n"
+			. "            'We approved your reply to \"%s\".',\n"
+			. "            get_the_title( \$comment->comment_post_ID )\n"
+			. "        )\n"
+			. "    );\n"
+			. "}, 10, 2 );\n";
+		?>
+		<div class="cbe-preview" style="max-width:48rem;margin-top:1rem;">
+			<p style="margin:0 0 0.5rem;color:#646970;font-size:0.85em;">
+				<?php esc_html_e( 'Preview', 'code-block-enhancer' ); ?>
+			</p>
+			<pre class="wp-block-code" data-language="php"><code class="language-php"><?php echo esc_html( $sample ); ?></code></pre>
+		</div>
+		<?php
 	}
 
 	public function render_page() {

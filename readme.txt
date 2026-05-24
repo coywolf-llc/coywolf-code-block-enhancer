@@ -122,11 +122,13 @@ is enough. There is no external CDN call from the front end.
 = How do I change the theme? =
 
 Go to **Tools → Code Blocks** in WP Admin. The "Code block theme"
-dropdown lists every bundled theme in three groups: Coywolf (Auto /
-Always light / Always dark), Prism (built-in), and Prism Themes
-(community). The selected theme's stylesheet is enqueued only on posts
-that contain a code block; only one theme file is ever loaded per
-request.
+dropdown lists every bundled theme in three groups: Coywolf (Claude —
+Auto / Always light / Always dark), Prism (built-in), and Prism Themes
+(community). Below the dropdown a live preview pane re-renders a sample
+PHP snippet in the highlighted theme on every change — your site keeps
+the previously saved theme until you click **Save Changes**. The
+selected theme's stylesheet is enqueued only on posts that contain a
+code block; only one theme file is ever loaded per request.
 
 = How do I lock code blocks to light or dark mode for everyone? =
 
