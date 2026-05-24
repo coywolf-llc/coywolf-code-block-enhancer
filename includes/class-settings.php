@@ -4,11 +4,16 @@
  *
  * Stores one option, `cbe_theme`, with one of the keys defined in
  * {@see self::themes()}. The chosen theme is applied on the front end by
- * enqueueing the matching stylesheet under assets/themes/; the Coywolf
- * Default-palette variants (coywolf-auto / coywolf-light / coywolf-dark) also add a
- * `cbe-theme-light` / `cbe-theme-dark` body class so the lock-class
- * selectors in coywolf-claude.css beat its @media (prefers-color-scheme)
- * defaults.
+ * enqueueing the matching stylesheet under assets/themes/; the
+ * Default-palette variants (coywolf-auto / coywolf-light / coywolf-dark)
+ * also add a `cbe-theme-light` / `cbe-theme-dark` body class so the
+ * lock-class selectors in default.css beat its @media
+ * (prefers-color-scheme) defaults.
+ *
+ * Custom-theme upload: a single CSS file can be uploaded; it lives at
+ * `<uploads>/code-block-enhancer/custom.css` and is registered as the
+ * `custom` theme key in the dropdown. Uploading again replaces it —
+ * there is only ever one custom theme at a time.
  *
  * Migration: the legacy `cbe_theme_mode` option (auto / light / dark) is
  * translated once into the new option ("coywolf-{mode}") and then deleted.
@@ -22,21 +27,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Coywolf_CBE_Settings {
 
-	const OPTION        = 'cbe_theme';
-	const LEGACY_OPTION = 'cbe_theme_mode';
-	const PAGE          = 'cbe-settings';
-	const GROUP         = 'cbe_settings';
-	const CAP           = 'manage_options';
-	const DEFAULT_THEME = 'coywolf-auto';
+	const OPTION         = 'cbe_theme';
+	const LEGACY_OPTION  = 'cbe_theme_mode';
+	const CUSTOM_OPTION  = 'cbe_custom_theme';
+	const PAGE           = 'cbe-settings';
+	const GROUP          = 'cbe_settings';
+	const CAP            = 'manage_options';
+	const DEFAULT_THEME  = 'coywolf-auto';
+	const CUSTOM_KEY     = 'custom';
+	const CUSTOM_DIRNAME = 'code-block-enhancer';
+	const CUSTOM_FILE    = 'custom.css';
+	const CUSTOM_MAX_BYTES = 262144; // 256 KB.
 
 	/**
 	 * Full theme registry. Each entry:
 	 *   key     → option value + dropdown <option> value
 	 *   label   → human-readable name shown in the dropdown
-	 *   file    → relative path under assets/themes/ (or null for built-ins
-	 *             that have no theme stylesheet of their own)
+	 *   file    → relative path under assets/themes/, OR null when the
+	 *             entry overrides with an absolute `url`
+	 *   url     → absolute URL override (used for the custom upload, which
+	 *             lives under wp-content/uploads/, not the plugin dir)
 	 *   group   → optgroup label
 	 *   lock    → 'light' | 'dark' | null — body class added when active
+	 *
+	 * The `custom` entry only appears when a custom CSS has been uploaded
+	 * AND the file is still on disk — see {@see self::custom_theme_meta()}.
 	 *
 	 * @return array<string,array>
 	 */
@@ -44,23 +59,40 @@ final class Coywolf_CBE_Settings {
 		$coywolf = array(
 			'coywolf-auto'  => array(
 				'label' => __( 'Default — Auto (follow OS dark mode)', 'code-block-enhancer' ),
-				'file'  => 'coywolf-claude.css',
+				'file'  => 'default.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => null,
 			),
 			'coywolf-light' => array(
 				'label' => __( 'Default — Always light', 'code-block-enhancer' ),
-				'file'  => 'coywolf-claude.css',
+				'file'  => 'default.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'light',
 			),
 			'coywolf-dark'  => array(
 				'label' => __( 'Default — Always dark', 'code-block-enhancer' ),
-				'file'  => 'coywolf-claude.css',
+				'file'  => 'default.css',
 				'group' => __( 'Coywolf', 'code-block-enhancer' ),
 				'lock'  => 'dark',
 			),
 		);
+
+		// Custom theme entry — only present if an upload exists on disk.
+		$custom = array();
+		$meta   = self::custom_theme_meta();
+		if ( null !== $meta ) {
+			$custom[ self::CUSTOM_KEY ] = array(
+				'label' => sprintf(
+					/* translators: %s is the original filename of the uploaded CSS file. */
+					__( 'Custom — %s', 'code-block-enhancer' ),
+					$meta['original_name']
+				),
+				'file'  => null,
+				'url'   => self::custom_theme_url(),
+				'group' => __( 'Custom', 'code-block-enhancer' ),
+				'lock'  => null,
+			);
+		}
 
 		// 8 built-in Prism themes (PrismJS/prism v1.30.0, MIT — see
 		// assets/themes/LICENSE-prism). Minified files.
@@ -137,7 +169,20 @@ final class Coywolf_CBE_Settings {
 			);
 		}
 
-		return array_merge( $coywolf, $builtin_themes, $community_themes );
+		return array_merge( $coywolf, $custom, $builtin_themes, $community_themes );
+	}
+
+	/**
+	 * Build the public URL for any theme entry.
+	 *
+	 * @param array $entry One entry from {@see self::themes()}.
+	 * @return string Absolute URL to the theme stylesheet.
+	 */
+	public static function theme_url( array $entry ) {
+		if ( ! empty( $entry['url'] ) ) {
+			return $entry['url'];
+		}
+		return CBE_URL . 'assets/themes/' . $entry['file'];
 	}
 
 	public function init() {
@@ -145,6 +190,8 @@ final class Coywolf_CBE_Settings {
 		add_action( 'admin_init',            array( $this, 'register_setting' ) );
 		add_action( 'admin_init',            array( $this, 'maybe_migrate_legacy_option' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'admin_post_cbe_upload_custom_theme', array( $this, 'handle_upload' ) );
+		add_action( 'admin_post_cbe_remove_custom_theme', array( $this, 'handle_remove' ) );
 		add_filter( 'admin_body_class',      array( $this, 'admin_body_class_for_lock' ) );
 		add_filter( 'body_class',            array( $this, 'maybe_add_lock_class' ) );
 		add_filter(
@@ -153,39 +200,242 @@ final class Coywolf_CBE_Settings {
 		);
 	}
 
-	/**
-	 * Hook suffix added by add_submenu_page() for this page. Used to scope
-	 * admin_enqueue_scripts so we only load Prism / theme CSS on our screen.
-	 */
 	private function page_hook_suffix() {
 		return 'tools_page_' . self::PAGE;
 	}
 
+	// ----- Custom-theme storage helpers ------------------------------------
+
 	/**
-	 * Enqueue the live-preview assets on Tools → Code Blocks only.
-	 *
-	 * Mirrors the front-end enqueue chain: Prism core + grammars, the
-	 * copy-button script, the chrome CSS, and the currently-saved theme
-	 * CSS. The theme CSS handle is well-known (`cbe-preview-theme-css`)
-	 * so the preview JS can rewrite its href on every dropdown change
-	 * without enqueueing a second link tag.
-	 *
-	 * Nothing here writes to the database — the option only updates when
-	 * the Settings API form submits via Save Changes.
-	 *
-	 * @param string $hook_suffix Current admin page hook suffix.
+	 * Absolute filesystem path to the custom-theme directory under uploads.
 	 */
+	private static function custom_dir() {
+		$u = wp_upload_dir( null, false );
+		return trailingslashit( $u['basedir'] ) . self::CUSTOM_DIRNAME . '/';
+	}
+
+	/**
+	 * Public URL of the custom-theme directory under uploads.
+	 */
+	private static function custom_dir_url() {
+		$u = wp_upload_dir( null, false );
+		return trailingslashit( $u['baseurl'] ) . self::CUSTOM_DIRNAME . '/';
+	}
+
+	/**
+	 * Metadata for the uploaded custom theme, or null if no upload exists.
+	 *
+	 * Re-validates that the file is still on disk so an externally-deleted
+	 * file doesn't keep the option entry alive.
+	 *
+	 * @return array{original_name:string, uploaded_at:int, byte_size:int}|null
+	 */
+	public static function custom_theme_meta() {
+		$meta = get_option( self::CUSTOM_OPTION, null );
+		if ( ! is_array( $meta ) || empty( $meta['original_name'] ) ) {
+			return null;
+		}
+		$path = self::custom_dir() . self::CUSTOM_FILE;
+		if ( ! file_exists( $path ) ) {
+			return null;
+		}
+		return array(
+			'original_name' => (string) $meta['original_name'],
+			'uploaded_at'   => isset( $meta['uploaded_at'] ) ? (int) $meta['uploaded_at'] : 0,
+			'byte_size'     => isset( $meta['byte_size'] ) ? (int) $meta['byte_size'] : (int) filesize( $path ),
+		);
+	}
+
+	/**
+	 * Public URL of the custom theme stylesheet, with a cache-buster.
+	 */
+	public static function custom_theme_url() {
+		$meta = self::custom_theme_meta();
+		if ( null === $meta ) {
+			return '';
+		}
+		return add_query_arg(
+			'v',
+			(int) $meta['uploaded_at'],
+			self::custom_dir_url() . self::CUSTOM_FILE
+		);
+	}
+
+	/**
+	 * CSS sanitiser. Returns the cleaned-up content, or null if the file
+	 * contains constructs we refuse to store under any circumstances
+	 * (script tags, PHP open tags, javascript:/vbscript: URIs,
+	 * data:text/html, IE expression(), CSS behavior:).
+	 *
+	 * This is defence in depth — a CSS file served with the correct
+	 * Content-Type does not execute JS — but blocking obvious injection
+	 * vectors keeps us safe if the file is ever served with a different
+	 * MIME type or imported into an unexpected context.
+	 *
+	 * @param string $raw Raw bytes from the upload.
+	 * @return string|null Sanitised CSS, or null if it must be rejected.
+	 */
+	public static function sanitise_css( $raw ) {
+		// Strip UTF-8 BOM.
+		if ( 0 === strncmp( $raw, "\xef\xbb\xbf", 3 ) ) {
+			$raw = substr( $raw, 3 );
+		}
+		// Normalise line endings.
+		$raw = str_replace( array( "\r\n", "\r" ), "\n", $raw );
+
+		// Reject if any of these dangerous tokens appear anywhere.
+		$forbidden = array(
+			'/<\s*script\b/i',
+			'/<\s*\/\s*script\s*>/i',
+			'/<\s*\?\s*php\b/i',
+			'/<\s*\?\s*=/',
+			'/<\s*\?\s*[\r\n\s]/',
+			'/javascript\s*:/i',
+			'/vbscript\s*:/i',
+			'/data\s*:\s*text\/html/i',
+			'/expression\s*\(/i',
+			'/behavior\s*:/i',
+			'/-moz-binding\s*:/i',
+		);
+		foreach ( $forbidden as $pattern ) {
+			if ( preg_match( $pattern, $raw ) ) {
+				return null;
+			}
+		}
+
+		return $raw;
+	}
+
+	// ----- Upload / remove handlers ----------------------------------------
+
+	/**
+	 * Process a custom-theme upload submitted from the settings page.
+	 *
+	 * Capability + nonce + extension + MIME + size + content sanitiser
+	 * checks must all pass before the file is written. Any failure
+	 * redirects back with a query arg consumed by {@see self::render_notices()}.
+	 */
+	public function handle_upload() {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( esc_html__( 'You do not have permission to upload themes.', 'code-block-enhancer' ) );
+		}
+		check_admin_referer( 'cbe_upload_custom_theme' );
+
+		$back = admin_url( 'tools.php?page=' . self::PAGE );
+
+		if ( empty( $_FILES['cbe_custom_theme'] ) || ! is_array( $_FILES['cbe_custom_theme'] ) ) {
+			$this->redirect_with( $back, 'missing' );
+		}
+
+		$f = $_FILES['cbe_custom_theme'];
+
+		if ( ! isset( $f['error'] ) || UPLOAD_ERR_OK !== (int) $f['error'] ) {
+			$this->redirect_with( $back, 'error' );
+		}
+		if ( ! isset( $f['size'] ) || (int) $f['size'] <= 0 ) {
+			$this->redirect_with( $back, 'error' );
+		}
+		if ( (int) $f['size'] > self::CUSTOM_MAX_BYTES ) {
+			$this->redirect_with( $back, 'too_large' );
+		}
+
+		$name = isset( $f['name'] ) ? (string) $f['name'] : '';
+		$ext  = strtolower( pathinfo( $name, PATHINFO_EXTENSION ) );
+		if ( 'css' !== $ext ) {
+			$this->redirect_with( $back, 'not_css' );
+		}
+
+		// Use WP's hardened MIME helper with an explicit allow-list.
+		$tmp = isset( $f['tmp_name'] ) ? (string) $f['tmp_name'] : '';
+		if ( '' === $tmp || ! is_uploaded_file( $tmp ) ) {
+			$this->redirect_with( $back, 'error' );
+		}
+		$check = wp_check_filetype_and_ext( $tmp, $name, array( 'css' => 'text/css' ) );
+		if ( empty( $check['ext'] ) || 'css' !== $check['ext'] ) {
+			$this->redirect_with( $back, 'bad_mime' );
+		}
+
+		$raw = file_get_contents( $tmp );
+		if ( false === $raw ) {
+			$this->redirect_with( $back, 'read_error' );
+		}
+
+		$clean = self::sanitise_css( $raw );
+		if ( null === $clean ) {
+			$this->redirect_with( $back, 'unsafe' );
+		}
+
+		$dir = self::custom_dir();
+		if ( ! wp_mkdir_p( $dir ) ) {
+			$this->redirect_with( $back, 'mkdir_failed' );
+		}
+
+		// Best-effort .htaccess hint so Apache serves with text/css even
+		// if a host's mime.types is incomplete. Harmless on Nginx (Nginx
+		// ignores .htaccess) — there text/css is configured globally.
+		$htaccess = $dir . '.htaccess';
+		if ( ! file_exists( $htaccess ) ) {
+			@file_put_contents( $htaccess, "AddType text/css .css\n", LOCK_EX );
+		}
+
+		$path = $dir . self::CUSTOM_FILE;
+		if ( false === file_put_contents( $path, $clean, LOCK_EX ) ) {
+			$this->redirect_with( $back, 'write_failed' );
+		}
+
+		update_option(
+			self::CUSTOM_OPTION,
+			array(
+				'original_name' => sanitize_file_name( $name ),
+				'uploaded_at'   => time(),
+				'byte_size'     => strlen( $clean ),
+			)
+		);
+
+		$this->redirect_with( $back, 'ok' );
+	}
+
+	/**
+	 * Delete the uploaded custom theme. If `cbe_theme` was set to
+	 * `custom`, fall back to the default so the front end doesn't try to
+	 * load a missing file.
+	 */
+	public function handle_remove() {
+		if ( ! current_user_can( self::CAP ) ) {
+			wp_die( esc_html__( 'You do not have permission to remove the custom theme.', 'code-block-enhancer' ) );
+		}
+		check_admin_referer( 'cbe_remove_custom_theme' );
+
+		$path = self::custom_dir() . self::CUSTOM_FILE;
+		if ( file_exists( $path ) ) {
+			@unlink( $path );
+		}
+		delete_option( self::CUSTOM_OPTION );
+
+		if ( self::CUSTOM_KEY === get_option( self::OPTION, self::DEFAULT_THEME ) ) {
+			update_option( self::OPTION, self::DEFAULT_THEME );
+		}
+
+		$this->redirect_with( admin_url( 'tools.php?page=' . self::PAGE ), 'removed' );
+	}
+
+	/**
+	 * Redirect helper. Always exits.
+	 */
+	private function redirect_with( $url, $status ) {
+		wp_safe_redirect( add_query_arg( 'cbe_upload', $status, $url ) );
+		exit;
+	}
+
+	// ----- Enqueue (admin preview) -----------------------------------------
+
 	public function enqueue_admin_assets( $hook_suffix ) {
 		if ( $hook_suffix !== $this->page_hook_suffix() ) {
 			return;
 		}
 
-		$prism_url   = CBE_URL . 'assets/prism/';
-		$themes_url  = CBE_URL . 'assets/themes/';
+		$prism_url = CBE_URL . 'assets/prism/';
 
-		// Same dependency chain used on the front end. No `defer` strategy
-		// — admin pages don't need the rendering optimisation and we want
-		// Prism's DOMContentLoaded auto-highlight to fire normally.
 		$chain = array(
 			'cbe-prism'                   => 'prism-core.min.js',
 			'cbe-prism-markup'            => 'prism-markup.min.js',
@@ -206,7 +456,6 @@ final class Coywolf_CBE_Settings {
 			$prev = array( $handle );
 		}
 
-		// Copy button: depends on the last grammar so all of Prism is present.
 		wp_enqueue_script(
 			'cbe-code-blocks',
 			CBE_URL . 'js/code-blocks.js',
@@ -215,20 +464,16 @@ final class Coywolf_CBE_Settings {
 			true
 		);
 
-		// Chrome (layout / language label / copy button) + saved theme CSS.
 		wp_enqueue_style( 'cbe-style', CBE_URL . 'css/code-block.css', array(), CBE_VERSION );
 
 		$current_entry = self::current_theme_entry();
 		wp_enqueue_style(
 			'cbe-preview-theme-css',
-			$themes_url . $current_entry['file'],
+			self::theme_url( $current_entry ),
 			array( 'cbe-style' ),
 			CBE_VERSION
 		);
 
-		// Live-preview controller. Localize the full theme registry (just
-		// file + lock — labels are already in the dropdown DOM) so the
-		// dropdown change handler can swap stylesheets client-side.
 		wp_enqueue_script(
 			'cbe-settings-preview',
 			CBE_URL . 'js/settings-preview.js',
@@ -237,14 +482,17 @@ final class Coywolf_CBE_Settings {
 			true
 		);
 		$payload = array(
-			'baseUrl' => esc_url_raw( $themes_url ),
+			'baseUrl' => esc_url_raw( CBE_URL . 'assets/themes/' ),
 			'themes'  => array(),
 		);
 		foreach ( self::themes() as $key => $info ) {
-			$payload['themes'][ $key ] = array(
-				'file' => $info['file'],
-				'lock' => $info['lock'],
-			);
+			$entry = array( 'lock' => $info['lock'] );
+			if ( ! empty( $info['url'] ) ) {
+				$entry['url'] = $info['url'];
+			} else {
+				$entry['file'] = $info['file'];
+			}
+			$payload['themes'][ $key ] = $entry;
 		}
 		wp_add_inline_script(
 			'cbe-settings-preview',
@@ -253,16 +501,6 @@ final class Coywolf_CBE_Settings {
 		);
 	}
 
-	/**
-	 * Mirror maybe_add_lock_class() onto the admin <body> so the preview
-	 * pane on our settings page renders the saved theme's locked palette
-	 * correctly before the preview JS runs.
-	 *
-	 * Scoped to our hook suffix to avoid polluting other admin screens.
-	 *
-	 * @param string $classes Space-separated body classes.
-	 * @return string
-	 */
 	public function admin_body_class_for_lock( $classes ) {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		if ( ! $screen || $screen->id !== $this->page_hook_suffix() ) {
@@ -276,6 +514,8 @@ final class Coywolf_CBE_Settings {
 		}
 		return $classes;
 	}
+
+	// ----- Settings API ----------------------------------------------------
 
 	public function register_menu() {
 		add_submenu_page(
@@ -317,17 +557,11 @@ final class Coywolf_CBE_Settings {
 		);
 	}
 
-	/**
-	 * One-shot migration from the legacy `cbe_theme_mode` (auto / light /
-	 * dark) to the new `cbe_theme` key. Runs once on any admin pageload
-	 * after upgrade, then deletes the legacy option.
-	 */
 	public function maybe_migrate_legacy_option() {
 		$legacy = get_option( self::LEGACY_OPTION, null );
 		if ( null === $legacy ) {
 			return;
 		}
-		// Only migrate if the new option hasn't already been set explicitly.
 		if ( false === get_option( self::OPTION, false ) ) {
 			$map = array(
 				'auto'  => 'coywolf-auto',
@@ -340,30 +574,18 @@ final class Coywolf_CBE_Settings {
 		delete_option( self::LEGACY_OPTION );
 	}
 
-	/**
-	 * Whitelist sanitiser — collapse anything off the registry to the default.
-	 *
-	 * @param mixed $value Raw input.
-	 * @return string A valid theme key.
-	 */
 	public static function sanitize_theme( $value ) {
 		$value  = is_string( $value ) ? $value : '';
 		$themes = self::themes();
 		return array_key_exists( $value, $themes ) ? $value : self::DEFAULT_THEME;
 	}
 
-	/**
-	 * Currently selected theme key (always one of {@see self::themes()}).
-	 */
 	public static function current_theme() {
 		$stored = get_option( self::OPTION, self::DEFAULT_THEME );
 		$themes = self::themes();
 		return array_key_exists( $stored, $themes ) ? $stored : self::DEFAULT_THEME;
 	}
 
-	/**
-	 * Full registry entry for the active theme.
-	 */
 	public static function current_theme_entry() {
 		$themes = self::themes();
 		$key    = self::current_theme();
@@ -394,14 +616,12 @@ final class Coywolf_CBE_Settings {
 		return $links;
 	}
 
-	/**
-	 * Theme dropdown, grouped into <optgroup>s.
-	 */
+	// ----- Rendering -------------------------------------------------------
+
 	public function render_theme_field() {
 		$current = self::current_theme();
 		$themes  = self::themes();
 
-		// Bucket by group, preserving registry order within each group.
 		$by_group = array();
 		foreach ( $themes as $key => $info ) {
 			$by_group[ $info['group'] ][ $key ] = $info['label'];
@@ -429,12 +649,6 @@ final class Coywolf_CBE_Settings {
 		echo '<strong>' . esc_html__( 'Changing the dropdown only updates the preview below — your site keeps the saved theme until you click Save Changes.', 'code-block-enhancer' ) . '</strong>';
 		echo '</p>';
 
-		// Live preview pane. The HTML is the same shape the front-end
-		// `core/code` block renders (`<pre class="wp-block-code" data-language="…">
-		// <code class="language-…">…</code></pre>`), so the plugin's chrome
-		// CSS + Prism + the selected theme CSS apply unchanged. js/settings-preview.js
-		// rewrites the <link href> on every dropdown change; no DB write
-		// happens until the form submits.
 		$sample = "<?php\n"
 			. "// Send a thank-you email when a new comment is approved.\n"
 			. "add_action( 'comment_post', function ( int \$id, \$approved ) {\n"
@@ -461,6 +675,99 @@ final class Coywolf_CBE_Settings {
 		<?php
 	}
 
+	private function render_notices() {
+		if ( empty( $_GET['cbe_upload'] ) ) {
+			return;
+		}
+		$status = sanitize_key( wp_unslash( $_GET['cbe_upload'] ) );
+		$kb     = (int) round( self::CUSTOM_MAX_BYTES / 1024 );
+		$map = array(
+			'ok'           => array( 'success', __( 'Custom theme uploaded.', 'code-block-enhancer' ) ),
+			'removed'      => array( 'success', __( 'Custom theme removed.', 'code-block-enhancer' ) ),
+			'missing'      => array( 'error',   __( 'No file was uploaded.', 'code-block-enhancer' ) ),
+			'error'        => array( 'error',   __( 'The upload failed. Please try again.', 'code-block-enhancer' ) ),
+			'too_large'    => array(
+				'error',
+				sprintf(
+					/* translators: %d is the size limit in KB. */
+					__( 'The file is larger than the %dKB limit.', 'code-block-enhancer' ),
+					$kb
+				),
+			),
+			'not_css'      => array( 'error',   __( 'Only .css files are accepted.', 'code-block-enhancer' ) ),
+			'bad_mime'     => array( 'error',   __( "The file didn't look like a CSS file (MIME mismatch).", 'code-block-enhancer' ) ),
+			'read_error'   => array( 'error',   __( 'Could not read the uploaded file.', 'code-block-enhancer' ) ),
+			'unsafe'       => array( 'error',   __( 'The file contained markup or scripts that are not allowed in a CSS theme (e.g. <script>, <?php, javascript: URIs, expression()). Nothing was saved.', 'code-block-enhancer' ) ),
+			'mkdir_failed' => array( 'error',   __( 'Could not create the uploads directory.', 'code-block-enhancer' ) ),
+			'write_failed' => array( 'error',   __( 'Could not write the file to disk.', 'code-block-enhancer' ) ),
+		);
+		if ( ! isset( $map[ $status ] ) ) {
+			return;
+		}
+		list( $type, $msg ) = $map[ $status ];
+		printf(
+			'<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+			esc_attr( $type ),
+			esc_html( $msg )
+		);
+	}
+
+	private function render_custom_theme_section() {
+		$meta = self::custom_theme_meta();
+		$kb   = (int) round( self::CUSTOM_MAX_BYTES / 1024 );
+		?>
+		<h2><?php esc_html_e( 'Custom theme', 'code-block-enhancer' ); ?></h2>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d is the upload size limit in KB. */
+					__( 'Upload a single .css file (up to %dKB). Only one custom theme is stored at a time — uploading a new file replaces the existing one. The file is checked for unsafe content (script tags, PHP open tags, javascript: URIs, expression(), etc.) before being written, and is served from your uploads directory with the rest of your media.', 'code-block-enhancer' ),
+					$kb
+				)
+			);
+			?>
+		</p>
+
+		<?php if ( $meta ) : ?>
+			<p>
+				<strong><?php esc_html_e( 'Current custom theme:', 'code-block-enhancer' ); ?></strong>
+				<code><?php echo esc_html( $meta['original_name'] ); ?></code>
+				(<?php echo esc_html( size_format( $meta['byte_size'] ) ); ?>,
+				<?php
+				printf(
+					/* translators: %s is a human-readable time difference, e.g. "5 minutes". */
+					esc_html__( 'uploaded %s ago', 'code-block-enhancer' ),
+					esc_html( human_time_diff( $meta['uploaded_at'], time() ) )
+				);
+				?>)
+			</p>
+		<?php endif; ?>
+
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data" style="margin-bottom:1rem;">
+			<input type="hidden" name="action" value="cbe_upload_custom_theme" />
+			<?php wp_nonce_field( 'cbe_upload_custom_theme' ); ?>
+			<p>
+				<input type="file" name="cbe_custom_theme" accept=".css,text/css" required />
+				<?php submit_button(
+					$meta ? __( 'Replace custom theme', 'code-block-enhancer' ) : __( 'Upload custom theme', 'code-block-enhancer' ),
+					'secondary',
+					'submit',
+					false
+				); ?>
+			</p>
+		</form>
+
+		<?php if ( $meta ) : ?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_attr( esc_js( __( 'Remove the custom theme? This cannot be undone.', 'code-block-enhancer' ) ) ); ?>');">
+				<input type="hidden" name="action" value="cbe_remove_custom_theme" />
+				<?php wp_nonce_field( 'cbe_remove_custom_theme' ); ?>
+				<?php submit_button( __( 'Remove custom theme', 'code-block-enhancer' ), 'delete', 'submit', false ); ?>
+			</form>
+		<?php endif; ?>
+		<?php
+	}
+
 	public function render_page() {
 		if ( ! current_user_can( self::CAP ) ) {
 			return;
@@ -468,6 +775,7 @@ final class Coywolf_CBE_Settings {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<?php $this->render_notices(); ?>
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( self::GROUP );
@@ -475,6 +783,10 @@ final class Coywolf_CBE_Settings {
 				submit_button();
 				?>
 			</form>
+
+			<hr style="margin:2rem 0;" />
+
+			<?php $this->render_custom_theme_section(); ?>
 		</div>
 		<?php
 	}
