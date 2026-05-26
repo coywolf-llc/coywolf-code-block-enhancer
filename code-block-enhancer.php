@@ -210,8 +210,8 @@ add_filter( 'render_block', function ( $content, $block ) {
 
 /**
  * Eliminate the grammar-script critical request chain by emitting
- * `<link rel="preload" as="script">` hints in <head> for exactly the
- * Prism grammars the current post needs.
+ * `<link rel="preload" as="script" fetchpriority="low">` hints in
+ * <head> for exactly the Prism grammars the current post needs.
  *
  * Without this, the deferred grammar <script> tags only get discovered
  * in the footer, after the browser has parsed the entire body. With it,
@@ -219,74 +219,87 @@ add_filter( 'render_block', function ( $content, $block ) {
  * sees the head — they download in parallel during HTML parse and the
  * later <script> tags execute the already-cached files in dep order.
  *
- * The URL for each preload is computed off the *registered* script's
- * src + version + `script_loader_src` filter, so it matches the
- * eventual <script src> byte-for-byte and the browser reuses the cache
- * entry instead of double-fetching.
+ * `fetchpriority="low"` (Chrome / Edge 102+, Safari 17.2+, Firefox
+ * 132+) tells the browser these aren't render-critical, so the
+ * preloaded scripts won't compete with CSS / hero images for download
+ * priority. A preloaded script defaults to High priority; we want
+ * these queued after anything that affects LCP. Older browsers ignore
+ * the attribute — they still get the preload, just at default
+ * priority (no regression vs. the previous behaviour).
+ *
+ * We emit `<link>` tags ourselves via `wp_head` instead of using the
+ * `wp_preload_resources` filter: that filter's allowed-attrs whitelist
+ * doesn't include `fetchpriority`, so WP would strip the attribute.
+ *
+ * Each preload URL is computed off the *registered* script's src +
+ * version + `script_loader_src` filter so it matches the eventual
+ * <script src> byte-for-byte and the browser reuses one cache entry
+ * instead of double-fetching.
  */
-add_filter( 'wp_preload_resources', function ( $hints ) {
+add_action( 'wp_head', function () {
 	if ( ! is_singular() || ! has_block( 'core/code' ) ) {
-		return $hints;
+		return;
 	}
 
 	$post = get_post();
 	if ( ! $post || empty( $post->post_content ) ) {
-		return $hints;
+		return;
 	}
 
-	$languages = cbe_collect_code_block_languages( $post->post_content );
+	$urls = array();
 
 	// Copy-button JS is enqueued for every code block, language or not.
 	$copy_url = cbe_resolve_script_url( 'cbe-code-blocks' );
 	if ( $copy_url ) {
-		$hints[] = array( 'href' => $copy_url, 'as' => 'script' );
+		$urls[] = $copy_url;
 	}
 
-	if ( empty( $languages ) ) {
-		return $hints; // No grammars to preload.
-	}
+	$languages = cbe_collect_code_block_languages( $post->post_content );
+	if ( ! empty( $languages ) ) {
+		$allowed  = Coywolf_CBE_Language_Packs::active_language_handles();
+		$registry = Coywolf_CBE_Language_Packs::active_handles_with_deps();
 
-	$allowed  = Coywolf_CBE_Language_Packs::active_language_handles();
-	$registry = Coywolf_CBE_Language_Packs::active_handles_with_deps();
-
-	// Collect the union of every grammar handle this post needs +
-	// its transitive deps. Iterative-safe BFS.
-	$needed = array();
-	$stack  = array();
-	foreach ( $languages as $lang ) {
-		if ( in_array( $lang, $allowed, true ) && ! isset( $needed[ $lang ] ) ) {
-			$needed[ $lang ] = true;
-			$stack[]         = $lang;
+		// Union of every grammar handle this post needs + its
+		// transitive deps. Iterative-safe BFS.
+		$needed = array();
+		$stack  = array();
+		foreach ( $languages as $lang ) {
+			if ( in_array( $lang, $allowed, true ) && ! isset( $needed[ $lang ] ) ) {
+				$needed[ $lang ] = true;
+				$stack[]         = $lang;
+			}
 		}
-	}
-	while ( ! empty( $stack ) ) {
-		$h = array_pop( $stack );
-		if ( ! isset( $registry[ $h ] ) ) {
-			continue;
+		while ( ! empty( $stack ) ) {
+			$h = array_pop( $stack );
+			if ( ! isset( $registry[ $h ] ) ) {
+				continue;
+			}
+			foreach ( $registry[ $h ] as $r ) {
+				if ( ! isset( $needed[ $r ] ) ) {
+					$needed[ $r ] = true;
+					$stack[]      = $r;
+				}
+			}
 		}
-		foreach ( $registry[ $h ] as $r ) {
-			if ( ! isset( $needed[ $r ] ) ) {
-				$needed[ $r ] = true;
-				$stack[]      = $r;
+
+		// Prism core first (every grammar depends on it).
+		$core_url = cbe_resolve_script_url( 'prism' );
+		if ( $core_url ) {
+			$urls[] = $core_url;
+		}
+		foreach ( array_keys( $needed ) as $h ) {
+			$url = cbe_resolve_script_url( 'prism-' . $h );
+			if ( $url ) {
+				$urls[] = $url;
 			}
 		}
 	}
 
-	// Always include Prism core (every grammar depends on it).
-	$core_url = cbe_resolve_script_url( 'prism' );
-	if ( $core_url ) {
-		$hints[] = array( 'href' => $core_url, 'as' => 'script' );
+	$urls = array_values( array_unique( $urls ) );
+	foreach ( $urls as $url ) {
+		echo '<link rel="preload" as="script" fetchpriority="low" href="' . esc_url( $url ) . "\" />\n";
 	}
-
-	foreach ( array_keys( $needed ) as $h ) {
-		$url = cbe_resolve_script_url( 'prism-' . $h );
-		if ( $url ) {
-			$hints[] = array( 'href' => $url, 'as' => 'script' );
-		}
-	}
-
-	return $hints;
-}, 10, 1 );
+}, 5 );
 
 /**
  * Walk a post's block tree (including innerBlocks) and return the
