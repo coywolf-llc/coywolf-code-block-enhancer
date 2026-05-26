@@ -207,3 +207,149 @@ add_filter( 'render_block', function ( $content, $block ) {
 
 	return $content;
 }, 10, 2 );
+
+/**
+ * Eliminate the grammar-script critical request chain by emitting
+ * `<link rel="preload" as="script">` hints in <head> for exactly the
+ * Prism grammars the current post needs.
+ *
+ * Without this, the deferred grammar <script> tags only get discovered
+ * in the footer, after the browser has parsed the entire body. With it,
+ * the browser's preload scanner starts fetching them as soon as it
+ * sees the head — they download in parallel during HTML parse and the
+ * later <script> tags execute the already-cached files in dep order.
+ *
+ * The URL for each preload is computed off the *registered* script's
+ * src + version + `script_loader_src` filter, so it matches the
+ * eventual <script src> byte-for-byte and the browser reuses the cache
+ * entry instead of double-fetching.
+ */
+add_filter( 'wp_preload_resources', function ( $hints ) {
+	if ( ! is_singular() || ! has_block( 'core/code' ) ) {
+		return $hints;
+	}
+
+	$post = get_post();
+	if ( ! $post || empty( $post->post_content ) ) {
+		return $hints;
+	}
+
+	$languages = cbe_collect_code_block_languages( $post->post_content );
+
+	// Copy-button JS is enqueued for every code block, language or not.
+	$copy_url = cbe_resolve_script_url( 'cbe-code-blocks' );
+	if ( $copy_url ) {
+		$hints[] = array( 'href' => $copy_url, 'as' => 'script' );
+	}
+
+	if ( empty( $languages ) ) {
+		return $hints; // No grammars to preload.
+	}
+
+	$allowed  = Coywolf_CBE_Language_Packs::active_language_handles();
+	$registry = Coywolf_CBE_Language_Packs::active_handles_with_deps();
+
+	// Collect the union of every grammar handle this post needs +
+	// its transitive deps. Iterative-safe BFS.
+	$needed = array();
+	$stack  = array();
+	foreach ( $languages as $lang ) {
+		if ( in_array( $lang, $allowed, true ) && ! isset( $needed[ $lang ] ) ) {
+			$needed[ $lang ] = true;
+			$stack[]         = $lang;
+		}
+	}
+	while ( ! empty( $stack ) ) {
+		$h = array_pop( $stack );
+		if ( ! isset( $registry[ $h ] ) ) {
+			continue;
+		}
+		foreach ( $registry[ $h ] as $r ) {
+			if ( ! isset( $needed[ $r ] ) ) {
+				$needed[ $r ] = true;
+				$stack[]      = $r;
+			}
+		}
+	}
+
+	// Always include Prism core (every grammar depends on it).
+	$core_url = cbe_resolve_script_url( 'prism' );
+	if ( $core_url ) {
+		$hints[] = array( 'href' => $core_url, 'as' => 'script' );
+	}
+
+	foreach ( array_keys( $needed ) as $h ) {
+		$url = cbe_resolve_script_url( 'prism-' . $h );
+		if ( $url ) {
+			$hints[] = array( 'href' => $url, 'as' => 'script' );
+		}
+	}
+
+	return $hints;
+}, 10, 1 );
+
+/**
+ * Walk a post's block tree (including innerBlocks) and return the
+ * unique set of `language` attributes used on `core/code` blocks.
+ *
+ * @param string $content Post content with serialised blocks.
+ * @return string[]
+ */
+function cbe_collect_code_block_languages( $content ) {
+	if ( ! function_exists( 'parse_blocks' ) ) {
+		return array();
+	}
+	$found = array();
+	cbe_walk_blocks_for_languages( parse_blocks( $content ), $found );
+	return array_keys( $found );
+}
+
+function cbe_walk_blocks_for_languages( $blocks, &$found ) {
+	if ( ! is_array( $blocks ) ) {
+		return;
+	}
+	foreach ( $blocks as $block ) {
+		if ( ! empty( $block['blockName'] ) && 'core/code' === $block['blockName'] ) {
+			if ( ! empty( $block['attrs']['language'] ) && is_string( $block['attrs']['language'] ) ) {
+				$found[ $block['attrs']['language'] ] = true;
+			}
+		}
+		if ( ! empty( $block['innerBlocks'] ) ) {
+			cbe_walk_blocks_for_languages( $block['innerBlocks'], $found );
+		}
+	}
+}
+
+/**
+ * Compute the URL WP will use for a registered script handle's
+ * <script src>, so a preload <link> can match it byte-for-byte and
+ * the browser uses one cache entry for both. Mirrors what
+ * WP_Scripts::do_item() does (version query + script_loader_src
+ * filter) without actually emitting the tag.
+ *
+ * @param string $handle Registered script handle.
+ * @return string|null Full src URL, or null if not registered.
+ */
+function cbe_resolve_script_url( $handle ) {
+	if ( ! function_exists( 'wp_scripts' ) ) {
+		return null;
+	}
+	$wp_scripts = wp_scripts();
+	if ( empty( $wp_scripts->registered[ $handle ] ) ) {
+		return null;
+	}
+	$item = $wp_scripts->registered[ $handle ];
+	$src  = $item->src;
+	if ( ! $src ) {
+		return null;
+	}
+	$ver = $item->ver;
+	if ( false === $ver ) {
+		$ver = $wp_scripts->default_version;
+	}
+	if ( $ver ) {
+		$src = add_query_arg( 'ver', $ver, $src );
+	}
+	$src = apply_filters( 'script_loader_src', $src, $handle );
+	return $src ? (string) $src : null;
+}
