@@ -4,7 +4,7 @@
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
-- **Version:** 1.0.34
+- **Version:** 1.0.35
 - **Requires WordPress:** 6.3 or later
 - **Tested up to:** 7.0
 - **Requires PHP:** 7.4 or later
@@ -97,6 +97,9 @@ The label only renders when a language is set (the CSS rule is `.wp-block-code[d
 Releases are published to this plugin's [GitHub repository](https://github.com/coywolf-llc/coywolf-code-block-enhancer). The plugin checks GitHub Releases (cached for 6 hours) and offers any newer version through the standard WordPress **Dashboard → Updates** / "Update Now" flow. Downloads are restricted to a GitHub host allowlist as a safety check.
 
 ## Changelog
+
+### 1.0.35
+- Preload grammar scripts in <head> to break the critical request chain (#36).
 
 ### 1.0.34
 - Default light palette: higher-contrast colors (WCAG AA / AAA) (#35).
