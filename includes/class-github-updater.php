@@ -421,6 +421,15 @@ final class Coywolf_CBE_GitHub_Updater {
 			return $cached;
 		}
 
+		// If the previous fetch failed (404 / rate-limit / network error),
+		// the negative result is cached for 15 minutes. Honour it instead
+		// of hammering api.github.com on every `inject_update` call —
+		// which fires on `load-update-core.php`, `load-plugins.php`,
+		// `load-update.php`, and every WP-Cron `wp_update_plugins` tick.
+		if ( false !== get_site_transient( self::TRANSIENT_KEY . '_neg' ) ) {
+			return null;
+		}
+
 		$url = 'https://api.github.com/repos/' . self::REPO . '/releases/latest';
 		$res = wp_remote_get(
 			$url,
@@ -433,10 +442,15 @@ final class Coywolf_CBE_GitHub_Updater {
 			)
 		);
 		if ( is_wp_error( $res ) ) {
+			// Cache the failure briefly so DNS / connection errors don't
+			// re-fire the 10s timeout on every subsequent admin pageload.
+			set_site_transient( self::TRANSIENT_KEY . '_neg', 'wp_error', 15 * MINUTE_IN_SECONDS );
 			return null;
 		}
 		$code = (int) wp_remote_retrieve_response_code( $res );
 		if ( 200 !== $code ) {
+			// Cache a tiny negative result so we don't hammer GitHub when
+			// there are no releases yet (404) or we're rate-limited.
 			set_site_transient( self::TRANSIENT_KEY . '_neg', $code, 15 * MINUTE_IN_SECONDS );
 			return null;
 		}
