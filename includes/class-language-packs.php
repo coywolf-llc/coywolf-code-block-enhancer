@@ -73,6 +73,23 @@ final class Coywolf_CBE_Language_Packs {
 	const BASELINE_MERGE_FLAG = 'cbe_baseline_merged_v1';
 
 	/**
+	 * Per-request memo store. The pack registry and everything derived
+	 * purely from it are constant within a request; the derived "active"
+	 * sets depend only on the enabled-language option, which is stable
+	 * within a front-end request. Memoising here turns what used to be
+	 * dozens of registry rebuilds (each with ~22 __() i18n lookups) per
+	 * page — render_block alone recomputes the allowlist once per code
+	 * block — into a single build.
+	 *
+	 * Entries keyed on the enabled set ('handles:<hash>', 'choices:<hash>')
+	 * recompute automatically if that set ever changes mid-request (e.g.
+	 * an option update during an admin save), so the cache can't go stale.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private static $memo = array();
+
+	/**
 	 * Grammars that aren't user-pickable but are pulled in automatically
 	 * when something that needs them is enabled. Indexed the same way as
 	 * a pack entry so the dependency resolver can look them up uniformly.
@@ -107,6 +124,14 @@ final class Coywolf_CBE_Language_Packs {
 	 * default-unchecked web/app extras.
 	 */
 	private static function packs() {
+		if ( isset( self::$memo['packs'] ) ) {
+			return self::$memo['packs'];
+		}
+		self::$memo['packs'] = self::build_packs();
+		return self::$memo['packs'];
+	}
+
+	private static function build_packs() {
 		return array(
 			'web_app'    => array(
 				'label'       => __( 'Web / App dev', 'code-block-enhancer' ),
@@ -198,21 +223,29 @@ final class Coywolf_CBE_Language_Packs {
 
 	/** Flat map of every grammar's info (deps + dep-only grammars). */
 	private static function all_known_grammars() {
+		if ( isset( self::$memo['known'] ) ) {
+			return self::$memo['known'];
+		}
 		$out = self::dep_grammars();
 		foreach ( self::packs() as $pack ) {
 			foreach ( $pack['langs'] as $h => $info ) {
 				$out[ $h ] = array( 'requires' => isset( $info['requires'] ) ? $info['requires'] : array() );
 			}
 		}
+		self::$memo['known'] = $out;
 		return $out;
 	}
 
 	/** Whitelist of every user-pickable handle in any pack. */
 	private static function all_pack_handles() {
+		if ( isset( self::$memo['pack_handles'] ) ) {
+			return self::$memo['pack_handles'];
+		}
 		$out = array();
 		foreach ( self::packs() as $pack ) {
 			$out = array_merge( $out, array_keys( $pack['langs'] ) );
 		}
+		self::$memo['pack_handles'] = $out;
 		return $out;
 	}
 
@@ -317,10 +350,16 @@ final class Coywolf_CBE_Language_Packs {
 	 * @return array<string, string[]> Ordered map of handle → requires.
 	 */
 	public static function active_handles_with_deps() {
+		$enabled = self::enabled_languages();
+		$key     = 'handles:' . md5( implode( ',', $enabled ) );
+		if ( isset( self::$memo[ $key ] ) ) {
+			return self::$memo[ $key ];
+		}
+
 		$known = self::all_known_grammars();
 
 		$registry = array();
-		foreach ( self::enabled_languages() as $h ) {
+		foreach ( $enabled as $h ) {
 			if ( isset( $known[ $h ] ) ) {
 				$registry[ $h ] = $known[ $h ];
 			}
@@ -350,6 +389,8 @@ final class Coywolf_CBE_Language_Packs {
 		foreach ( $order as $h ) {
 			$out[ $h ] = $registry[ $h ]['requires'];
 		}
+
+		self::$memo[ $key ] = $out;
 		return $out;
 	}
 
@@ -379,11 +420,16 @@ final class Coywolf_CBE_Language_Packs {
 	 * each pack).
 	 */
 	public static function active_language_choices() {
+		$enabled = self::enabled_languages();
+		$key     = 'choices:' . md5( implode( ',', $enabled ) );
+		if ( isset( self::$memo[ $key ] ) ) {
+			return self::$memo[ $key ];
+		}
+
 		$choices = array(
 			array( 'value' => '', 'label' => __( 'None (plain text)', 'code-block-enhancer' ) ),
 		);
 
-		$enabled = self::enabled_languages();
 		foreach ( self::packs() as $pack ) {
 			$pack_labels = array();
 			foreach ( $pack['langs'] as $h => $info ) {
@@ -397,6 +443,7 @@ final class Coywolf_CBE_Language_Packs {
 			}
 		}
 
+		self::$memo[ $key ] = $choices;
 		return $choices;
 	}
 
