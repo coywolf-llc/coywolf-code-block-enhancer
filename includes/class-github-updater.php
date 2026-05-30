@@ -167,6 +167,18 @@ final class Coywolf_CBE_GitHub_Updater {
 	public function guard_pre_download( $reply, $package, $upgrader, $hook_extra = array() ) {
 		unset( $upgrader );
 
+		// upgrader_pre_download also fires for manual zip uploads from
+		// Plugins → Add New → Upload Plugin, where `$package` is a LOCAL
+		// filesystem path, not a URL. The GitHub host allowlist only makes
+		// sense for remote downloads, and a local upload whose filename
+		// contains our slug would otherwise satisfy the "looks like ours"
+		// check below and then fail the allowlist — blocking the upload
+		// with "Refusing to download a plugin update from an untrusted
+		// host". Leave non-URL packages be.
+		if ( ! is_string( $package ) || ! preg_match( '#^https?://#i', $package ) ) {
+			return $reply;
+		}
+
 		// Prefer WP's authoritative signal: on a plugin update, hook_extra
 		// names the plugin basename being downloaded (WP 5.5+). When it
 		// says the download is ours, enforce the allowlist regardless of
