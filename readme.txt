@@ -50,9 +50,11 @@ copy-to-clipboard button to the top-right corner.
   checked for unsafe content (script tags, PHP open tags, `javascript:`
   URIs, `expression()`, etc.) before being saved. Only one custom theme
   is stored at a time — uploading replaces, removing wipes.
+<!-- wporg-strip:start -->
 * In-WordPress updates: new versions are pulled from this project's
   GitHub Releases through the standard Dashboard → Updates flow (latest
   release cached for 6 hours).
+<!-- wporg-strip:end -->
 
 = How it works =
 

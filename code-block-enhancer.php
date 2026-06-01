@@ -40,12 +40,16 @@ define( 'CBE_VERSION', '1.0.41' );
 define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
 define( 'CBE_PLUGIN_FILE', __FILE__ );
 
+/* wporg-strip:start — GitHub self-updater (removed from the WordPress.org build) */
 require_once __DIR__ . '/includes/class-github-updater.php';
+/* wporg-strip:end */
 require_once __DIR__ . '/includes/class-language-packs.php';
 require_once __DIR__ . '/includes/class-settings.php';
 
+/* wporg-strip:start — GitHub self-updater (removed from the WordPress.org build) */
 // Pull updates from GitHub Releases via the standard WP update flow.
 ( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
+/* wporg-strip:end */
 
 // Tools → Code Blocks settings page (Theme: Default-palette variants or
 // any of the 45 bundled Prism / prism-themes stylesheets) plus the
