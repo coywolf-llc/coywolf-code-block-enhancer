@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.41
+Stable tag: 1.0.42
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -197,6 +197,9 @@ standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
 are restricted to a GitHub host allowlist as a safety check.
 
 == Changelog ==
+
+= 1.0.42 =
+* Add WordPress.org variant build + gated SVN deploy (#43).
 
 = 1.0.41 =
 * Add Atom-feed fallback when the GitHub API is rate-limited (#42).
