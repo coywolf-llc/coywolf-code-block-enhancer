@@ -1,6 +1,5 @@
 === Coywolf Code Block Enhancer ===
-Contributors: coywolf
-Tags: code, syntax highlighting, prism, copy code, gutenberg
+Contributors: jonhenshawTags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
