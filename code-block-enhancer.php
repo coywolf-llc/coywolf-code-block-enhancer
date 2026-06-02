@@ -1,13 +1,13 @@
 <?php
 /**
  * Plugin Name:       Coywolf Code Block Enhancer
- * Plugin URI:        https://github.com/coywolf-llc/coywolf-code-block-enhancer
+ * Plugin URI:        https://coywolf.com/notes/code-block-enhancer-syntax-highlighter-and-code-copier-plugin-for-native-wordpress-code-blocks/
  * Description:       Adds a Tools → Code Blocks option to apply Prism.js syntax highlighting and a copy code to clipboard button to the native WordPress Code block. Assets load only on posts that contain a code block.
  * Version:           1.0.46
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Coywolf
- * Author URI:        https://coywolf.com/
+ * Author URI:        https://coywolf.com/jon-henshaw/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       code-block-enhancer
