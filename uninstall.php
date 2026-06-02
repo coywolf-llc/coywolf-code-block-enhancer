@@ -43,10 +43,16 @@ if ( is_array( $u ) && ! empty( $u['basedir'] ) ) {
 	foreach ( array( 'custom.css', '.htaccess' ) as $name ) {
 		$path = $dir . $name;
 		if ( file_exists( $path ) ) {
-			@unlink( $path );
+			wp_delete_file( $path );
 		}
 	}
 	if ( is_dir( $dir ) ) {
-		@rmdir( $dir );
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		global $wp_filesystem;
+		if ( WP_Filesystem() ) {
+			$wp_filesystem->rmdir( $dir );
+		}
 	}
 }

@@ -2,7 +2,7 @@
 Contributors: coywolf
 Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
-Tested up to: 6.7
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.0.42
 License: GPLv2 or later
