@@ -196,6 +196,11 @@ Releases (cached for 6 hours) and offers any newer version through the
 standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
 are restricted to a GitHub host allowlist as a safety check.
 
+== Screenshots ==
+
+1. The Code Block Enhancer settings screen in WordPress, showing the Appearance options with a code block theme dropdown set to "Default — Auto (follow OS dark mode)," a live preview of a syntax-highlighted PHP snippet, and a custom theme upload section.
+2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
+
 == Changelog ==
 
 = 1.0.45 =
