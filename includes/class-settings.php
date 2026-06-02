@@ -445,7 +445,7 @@ final class Coywolf_CBE_Settings {
 
 		$path = self::custom_dir() . self::CUSTOM_FILE;
 		if ( file_exists( $path ) ) {
-			@unlink( $path );
+			wp_delete_file( $path );
 		}
 		delete_option( self::CUSTOM_OPTION );
 
@@ -703,7 +703,7 @@ final class Coywolf_CBE_Settings {
 			// so the admin can see at a glance which entries are checked.
 			$open_attr    = $on_count > 0 ? ' open' : '';
 			?>
-			<details<?php echo $open_attr; ?> class="cbe-lang-pack" style="margin:0.5rem 0;border:1px solid #c3c4c7;border-radius:4px;padding:0.5rem 0.85rem;background:#fff;">
+			<details<?php echo esc_attr( $open_attr ); ?> class="cbe-lang-pack" style="margin:0.5rem 0;border:1px solid #c3c4c7;border-radius:4px;padding:0.5rem 0.85rem;background:#fff;">
 				<summary style="cursor:pointer;padding:0.25rem 0;list-style:revert;">
 					<strong><?php echo esc_html( $pack['label'] ); ?></strong>
 					<span style="color:#646970;margin-left:0.5rem;font-weight:normal;">
