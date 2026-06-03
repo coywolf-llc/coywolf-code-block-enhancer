@@ -209,7 +209,7 @@ final class Coywolf_CBE_GitHub_Updater {
 		if ( ! is_string( $package ) || '' === $this->validate_package_url( $package ) ) {
 			return new WP_Error(
 				'coywolf_cbe_untrusted_package',
-				__( 'Refusing to download a plugin update from an untrusted host.', 'code-block-enhancer' )
+				__( 'Refusing to download a plugin update from an untrusted host.', 'coywolf-code-block-enhancer' )
 			);
 		}
 		return $reply;
@@ -236,7 +236,7 @@ final class Coywolf_CBE_GitHub_Updater {
 				$plugin_meta[ $i ] = sprintf(
 					'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
 					esc_url( $repo_url ),
-					esc_html__( 'View details', 'code-block-enhancer' )
+					esc_html__( 'View details', 'coywolf-code-block-enhancer' )
 				);
 			}
 		}
@@ -433,7 +433,7 @@ final class Coywolf_CBE_GitHub_Updater {
 
 		return new WP_Error(
 			'coywolf_cbe_rename_failed',
-			__( 'Could not rename the downloaded update folder to match the plugin slug.', 'code-block-enhancer' )
+			__( 'Could not rename the downloaded update folder to match the plugin slug.', 'coywolf-code-block-enhancer' )
 		);
 	}
 
@@ -733,11 +733,11 @@ final class Coywolf_CBE_GitHub_Updater {
 		}
 		printf(
 			'<div class="notice notice-warning"><p><strong>%s</strong> %s</p></div>',
-			esc_html__( 'Coywolf Code Block Enhancer:', 'code-block-enhancer' ),
+			esc_html__( 'Coywolf Code Block Enhancer:', 'coywolf-code-block-enhancer' ),
 			esc_html(
 				sprintf(
 					/* translators: %s: failure reason */
-					__( 'could not check GitHub for updates (%s). This is usually temporary GitHub API rate-limiting on your host; the check retries automatically. If it persists, install the latest release manually from the plugin\'s GitHub Releases page.', 'code-block-enhancer' ),
+					__( 'could not check GitHub for updates (%s). This is usually temporary GitHub API rate-limiting on your host; the check retries automatically. If it persists, install the latest release manually from the plugin\'s GitHub Releases page.', 'coywolf-code-block-enhancer' ),
 					$err
 				)
 			)

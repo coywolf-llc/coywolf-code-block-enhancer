@@ -134,8 +134,8 @@ final class Coywolf_CBE_Language_Packs {
 	private static function build_packs() {
 		return array(
 			'web_app'    => array(
-				'label'       => __( 'Web / App dev', 'code-block-enhancer' ),
-				'description' => __( 'Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML — plus TypeScript, JSX, TSX, SCSS, Sass, Less, GraphQL.', 'code-block-enhancer' ),
+				'label'       => __( 'Web / App dev', 'coywolf-code-block-enhancer' ),
+				'description' => __( 'Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML — plus TypeScript, JSX, TSX, SCSS, Sass, Less, GraphQL.', 'coywolf-code-block-enhancer' ),
 				'langs'       => array(
 					// Default-checked: the former always-on baseline.
 					'bash'       => array( 'label' => 'Bash / Shell',  'requires' => array() ),
@@ -158,8 +158,8 @@ final class Coywolf_CBE_Language_Packs {
 				),
 			),
 			'backend'    => array(
-				'label'       => __( 'Backend languages', 'code-block-enhancer' ),
-				'description' => __( 'Go, Rust, Ruby, Java, C, C++, C#, Kotlin, Scala, Swift, Elixir, Erlang, Dart, Lua, Perl, R, Objective-C.', 'code-block-enhancer' ),
+				'label'       => __( 'Backend languages', 'coywolf-code-block-enhancer' ),
+				'description' => __( 'Go, Rust, Ruby, Java, C, C++, C#, Kotlin, Scala, Swift, Elixir, Erlang, Dart, Lua, Perl, R, Objective-C.', 'coywolf-code-block-enhancer' ),
 				'langs'       => array(
 					'go'         => array( 'label' => 'Go',          'requires' => array( 'clike' ) ),
 					'rust'       => array( 'label' => 'Rust',        'requires' => array() ),
@@ -181,8 +181,8 @@ final class Coywolf_CBE_Language_Packs {
 				),
 			),
 			'shells_ops' => array(
-				'label'       => __( 'Shells / Ops', 'code-block-enhancer' ),
-				'description' => __( 'PowerShell, Docker, nginx, Apache Configuration, systemd.', 'code-block-enhancer' ),
+				'label'       => __( 'Shells / Ops', 'coywolf-code-block-enhancer' ),
+				'description' => __( 'PowerShell, Docker, nginx, Apache Configuration, systemd.', 'coywolf-code-block-enhancer' ),
 				'langs'       => array(
 					'powershell' => array( 'label' => 'PowerShell',    'requires' => array() ),
 					'docker'     => array( 'label' => 'Docker',        'requires' => array() ),
@@ -192,8 +192,8 @@ final class Coywolf_CBE_Language_Packs {
 				),
 			),
 			'data_docs'  => array(
-				'label'       => __( 'Data / Docs', 'code-block-enhancer' ),
-				'description' => __( 'Markdown, TOML, INI, Diff, Git, Regex. (XML is the HTML / Markup grammar in the Web/App dev pack.)', 'code-block-enhancer' ),
+				'label'       => __( 'Data / Docs', 'coywolf-code-block-enhancer' ),
+				'description' => __( 'Markdown, TOML, INI, Diff, Git, Regex. (XML is the HTML / Markup grammar in the Web/App dev pack.)', 'coywolf-code-block-enhancer' ),
 				'langs'       => array(
 					'markdown' => array( 'label' => 'Markdown', 'requires' => array( 'markup' ) ),
 					'toml'     => array( 'label' => 'TOML',     'requires' => array() ),
@@ -204,8 +204,8 @@ final class Coywolf_CBE_Language_Packs {
 				),
 			),
 			'db'         => array(
-				'label'       => __( 'DB', 'code-block-enhancer' ),
-				'description' => __( 'PL/SQL, Cypher (Neo4j), MongoDB, SPARQL, Turtle. (T-SQL syntax is covered by the SQL grammar in the Web/App dev pack.)', 'code-block-enhancer' ),
+				'label'       => __( 'DB', 'coywolf-code-block-enhancer' ),
+				'description' => __( 'PL/SQL, Cypher (Neo4j), MongoDB, SPARQL, Turtle. (T-SQL syntax is covered by the SQL grammar in the Web/App dev pack.)', 'coywolf-code-block-enhancer' ),
 				'langs'       => array(
 					'plsql'   => array( 'label' => 'PL/SQL',  'requires' => array( 'sql' ) ),
 					'cypher'  => array( 'label' => 'Cypher',  'requires' => array() ),
@@ -427,7 +427,7 @@ final class Coywolf_CBE_Language_Packs {
 		}
 
 		$choices = array(
-			array( 'value' => '', 'label' => __( 'None (plain text)', 'code-block-enhancer' ) ),
+			array( 'value' => '', 'label' => __( 'None (plain text)', 'coywolf-code-block-enhancer' ) ),
 		);
 
 		foreach ( self::packs() as $pack ) {

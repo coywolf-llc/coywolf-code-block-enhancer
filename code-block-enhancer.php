@@ -10,7 +10,7 @@
  * Author URI:        https://coywolf.com/jon-henshaw/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       code-block-enhancer
+ * Text Domain:       coywolf-code-block-enhancer
  * Update URI:        https://github.com/coywolf-llc/coywolf-code-block-enhancer
  *
  * @package CodeBlockEnhancer
