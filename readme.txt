@@ -8,7 +8,7 @@ Stable tag: 1.0.50
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
+Syntax highlighting and a copy-to-clipboard button for the native WordPress Code block, plus a language picker in the editor sidebar.
 
 == Description ==
 

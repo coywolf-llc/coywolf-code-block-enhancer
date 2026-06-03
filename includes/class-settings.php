@@ -341,6 +341,7 @@ final class Coywolf_CBE_Settings {
 			$this->redirect_with( $back, 'missing' );
 		}
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Upload array; nonce + manage_options verified above, then validated field-by-field (error/size/extension/MIME/content) below. $_FILES is not a sanitizable scalar.
 		$f = $_FILES['cbe_custom_theme'];
 
 		if ( ! isset( $f['error'] ) || UPLOAD_ERR_OK !== (int) $f['error'] ) {
@@ -911,9 +912,11 @@ final class Coywolf_CBE_Settings {
 	}
 
 	private function render_notices() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display of a post-redirect status flag set by handle_upload()/handle_remove() (both nonce-verified); no state change here.
 		if ( empty( $_GET['cbe_upload'] ) ) {
 			return;
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only post-redirect status flag, sanitized with sanitize_key(); no state change here.
 		$status = sanitize_key( wp_unslash( $_GET['cbe_upload'] ) );
 		$kb     = (int) round( self::CUSTOM_MAX_BYTES / 1024 );
 		$map = array(
