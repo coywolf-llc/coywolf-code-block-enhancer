@@ -242,18 +242,30 @@ jobs:
         if: steps.tagcheck.outputs.exists == 'false'
         env:
           SLUG: code-block-enhancer
+          WPORG_SLUG: coywolf-code-block-enhancer
         run: |
           set -euo pipefail
-          bash .github/build-wporg.sh "$RUNNER_TEMP/build/$SLUG" "$RUNNER_TEMP/wporg"
-          ( cd "$RUNNER_TEMP/wporg" && zip -r -q "$GITHUB_WORKSPACE/$SLUG-wporg.zip" "$SLUG" )
-          ls -l "$SLUG-wporg.zip"
+          # The WordPress.org slug differs from the GitHub build slug: the
+          # directory hosts this plugin as "coywolf-code-block-enhancer" (which
+          # must match the text domain), while the GitHub build stays
+          # "code-block-enhancer" so existing self-updater installs keep their
+          # folder. Re-stage the runtime tree under the .org slug so the variant
+          # folder — and thus the slug Plugin Check / SVN derive from it — is
+          # correct.
+          WPORG_SRC="$RUNNER_TEMP/wporg-src/$WPORG_SLUG"
+          rm -rf "$RUNNER_TEMP/wporg-src"
+          mkdir -p "$WPORG_SRC"
+          cp -a "$RUNNER_TEMP/build/$SLUG"/. "$WPORG_SRC/"
+          bash .github/build-wporg.sh "$WPORG_SRC" "$RUNNER_TEMP/wporg"
+          ( cd "$RUNNER_TEMP/wporg" && zip -r -q "$GITHUB_WORKSPACE/$WPORG_SLUG-wporg.zip" "$WPORG_SLUG" )
+          ls -l "$WPORG_SLUG-wporg.zip"
 
       - name: Upload WordPress.org zip (submission / Plugin Check)
         if: steps.tagcheck.outputs.exists == 'false'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.final.outputs.tag }}-wporg
-          path: code-block-enhancer-wporg.zip
+          path: coywolf-code-block-enhancer-wporg.zip
           if-no-files-found: error
 
       - name: Check for WordPress.org SVN credentials
@@ -275,7 +287,7 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
-          SLUG:         code-block-enhancer
+          SLUG:         coywolf-code-block-enhancer
           VERSION:      ${{ steps.final.outputs.version }}
-          BUILD_DIR:    ${{ runner.temp }}/wporg/code-block-enhancer
+          BUILD_DIR:    ${{ runner.temp }}/wporg/coywolf-code-block-enhancer
           ASSETS_DIR:   .wordpress-org

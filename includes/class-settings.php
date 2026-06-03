@@ -58,24 +58,24 @@ final class Coywolf_CBE_Settings {
 	public static function themes() {
 		$coywolf = array(
 			'coywolf-auto'  => array(
-				'label'    => __( 'Default — Auto (follow OS dark mode)', 'code-block-enhancer' ),
+				'label'    => __( 'Default — Auto (follow OS dark mode)', 'coywolf-code-block-enhancer' ),
 				'file'     => 'default.css',
 				'download' => 'default.css',
-				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'group'    => __( 'Coywolf', 'coywolf-code-block-enhancer' ),
 				'lock'     => null,
 			),
 			'coywolf-light' => array(
-				'label'    => __( 'Default — Always light', 'code-block-enhancer' ),
+				'label'    => __( 'Default — Always light', 'coywolf-code-block-enhancer' ),
 				'file'     => 'default.css',
 				'download' => 'default.css',
-				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'group'    => __( 'Coywolf', 'coywolf-code-block-enhancer' ),
 				'lock'     => 'light',
 			),
 			'coywolf-dark'  => array(
-				'label'    => __( 'Default — Always dark', 'code-block-enhancer' ),
+				'label'    => __( 'Default — Always dark', 'coywolf-code-block-enhancer' ),
 				'file'     => 'default.css',
 				'download' => 'default.css',
-				'group'    => __( 'Coywolf', 'code-block-enhancer' ),
+				'group'    => __( 'Coywolf', 'coywolf-code-block-enhancer' ),
 				'lock'     => 'dark',
 			),
 		);
@@ -90,20 +90,20 @@ final class Coywolf_CBE_Settings {
 			$custom[ self::CUSTOM_KEY ] = array(
 				'label'    => sprintf(
 					/* translators: %s is the user-provided theme name (or the uploaded filename). */
-					__( 'Custom — %s', 'code-block-enhancer' ),
+					__( 'Custom — %s', 'coywolf-code-block-enhancer' ),
 					$display_name
 				),
 				'file'     => null,
 				'url'      => self::custom_theme_url(),
 				'download' => $meta['original_name'],
-				'group'    => __( 'Custom', 'code-block-enhancer' ),
+				'group'    => __( 'Custom', 'coywolf-code-block-enhancer' ),
 				'lock'     => null,
 			);
 		}
 
 		// 8 built-in Prism themes (PrismJS/prism v1.30.0, MIT — see
 		// assets/themes/LICENSE-prism). Minified files.
-		$builtin_group = __( 'Prism (built-in)', 'code-block-enhancer' );
+		$builtin_group = __( 'Prism (built-in)', 'coywolf-code-block-enhancer' );
 		$builtin       = array(
 			'prism'              => 'Prism Default',
 			'prism-coy'          => 'Coy',
@@ -128,7 +128,7 @@ final class Coywolf_CBE_Settings {
 
 		// 37 community themes (PrismJS/prism-themes, MIT — see
 		// assets/themes/LICENSE-prism-themes). Original .css files.
-		$community_group = __( 'Prism Themes (community)', 'code-block-enhancer' );
+		$community_group = __( 'Prism Themes (community)', 'coywolf-code-block-enhancer' );
 		$community       = array(
 			'prism-a11y-dark'                       => 'a11y Dark',
 			'prism-atom-dark'                       => 'Atom Dark',
@@ -331,7 +331,7 @@ final class Coywolf_CBE_Settings {
 	 */
 	public function handle_upload() {
 		if ( ! current_user_can( self::CAP ) ) {
-			wp_die( esc_html__( 'You do not have permission to upload themes.', 'code-block-enhancer' ) );
+			wp_die( esc_html__( 'You do not have permission to upload themes.', 'coywolf-code-block-enhancer' ) );
 		}
 		check_admin_referer( 'cbe_upload_custom_theme' );
 
@@ -439,7 +439,7 @@ final class Coywolf_CBE_Settings {
 	 */
 	public function handle_remove() {
 		if ( ! current_user_can( self::CAP ) ) {
-			wp_die( esc_html__( 'You do not have permission to remove the custom theme.', 'code-block-enhancer' ) );
+			wp_die( esc_html__( 'You do not have permission to remove the custom theme.', 'coywolf-code-block-enhancer' ) );
 		}
 		check_admin_referer( 'cbe_remove_custom_theme' );
 
@@ -596,8 +596,8 @@ final class Coywolf_CBE_Settings {
 	public function register_menu() {
 		add_submenu_page(
 			'tools.php',
-			__( 'Code Block Enhancer', 'code-block-enhancer' ),
-			__( 'Code Blocks', 'code-block-enhancer' ),
+			__( 'Code Block Enhancer', 'coywolf-code-block-enhancer' ),
+			__( 'Code Blocks', 'coywolf-code-block-enhancer' ),
 			self::CAP,
 			self::PAGE,
 			array( $this, 'render_page' )
@@ -631,14 +631,14 @@ final class Coywolf_CBE_Settings {
 
 		add_settings_section(
 			'cbe_appearance',
-			__( 'Appearance', 'code-block-enhancer' ),
+			__( 'Appearance', 'coywolf-code-block-enhancer' ),
 			'__return_false',
 			self::PAGE
 		);
 
 		add_settings_field(
 			self::OPTION,
-			__( 'Code block theme', 'code-block-enhancer' ),
+			__( 'Code block theme', 'coywolf-code-block-enhancer' ),
 			array( $this, 'render_theme_field' ),
 			self::PAGE,
 			'cbe_appearance',
@@ -652,7 +652,7 @@ final class Coywolf_CBE_Settings {
 		// but aren't part of the Settings API form's submission.
 		add_settings_field(
 			'cbe_custom_theme_ui',
-			__( 'Custom theme', 'code-block-enhancer' ),
+			__( 'Custom theme', 'coywolf-code-block-enhancer' ),
 			array( $this, 'render_custom_theme_field' ),
 			self::PAGE,
 			'cbe_appearance'
@@ -661,14 +661,14 @@ final class Coywolf_CBE_Settings {
 		// Languages comes after Appearance.
 		add_settings_section(
 			'cbe_languages',
-			__( 'Languages', 'code-block-enhancer' ),
+			__( 'Languages', 'coywolf-code-block-enhancer' ),
 			array( $this, 'render_languages_section_intro' ),
 			self::PAGE
 		);
 
 		add_settings_field(
 			Coywolf_CBE_Language_Packs::OPTION,
-			__( 'Language packs', 'code-block-enhancer' ),
+			__( 'Language packs', 'coywolf-code-block-enhancer' ),
 			array( $this, 'render_language_packs_field' ),
 			self::PAGE,
 			'cbe_languages'
@@ -678,7 +678,7 @@ final class Coywolf_CBE_Settings {
 	public function render_languages_section_intro() {
 		echo '<p>' . esc_html__(
 			'Tick the individual languages you want to appear in the Code block sidebar dropdown. The first 9 entries in Web / App dev (Bash, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, YAML) are checked by default on a fresh install; everything else is optional. Visitors only download the grammar file for the language a code block actually uses on the page, plus any Prism dependencies that grammar needs (typically 1–6 KB each).',
-			'code-block-enhancer'
+			'coywolf-code-block-enhancer'
 		) . '</p>';
 	}
 
@@ -710,7 +710,7 @@ final class Coywolf_CBE_Settings {
 						(<?php
 						printf(
 							/* translators: 1: number enabled, 2: total in pack */
-							esc_html__( '%1$d of %2$d enabled', 'code-block-enhancer' ),
+							esc_html__( '%1$d of %2$d enabled', 'coywolf-code-block-enhancer' ),
 							(int) $on_count,
 							(int) $total
 						);
@@ -731,9 +731,9 @@ final class Coywolf_CBE_Settings {
 					<?php endforeach; ?>
 				</div>
 				<p style="margin:0.5rem 0 0;font-size:0.85em;">
-					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="all"><?php esc_html_e( 'Select all in pack', 'code-block-enhancer' ); ?></a>
+					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="all"><?php esc_html_e( 'Select all in pack', 'coywolf-code-block-enhancer' ); ?></a>
 					&nbsp;|&nbsp;
-					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="none"><?php esc_html_e( 'Clear pack', 'code-block-enhancer' ); ?></a>
+					<a href="#" class="cbe-pack-toggle" data-cbe-pack-action="none"><?php esc_html_e( 'Clear pack', 'coywolf-code-block-enhancer' ); ?></a>
 				</p>
 			</details>
 			<?php
@@ -762,7 +762,7 @@ final class Coywolf_CBE_Settings {
 
 		echo '<p class="description">' . esc_html__(
 			'Tick the individual languages you want to appear in the Code block sidebar dropdown. Only ticked grammars are downloaded by visitors, and even then only when a page actually contains a code block in that language (the front-end loader fetches one grammar file per language used on the page, plus any Prism dependencies).',
-			'code-block-enhancer'
+			'coywolf-code-block-enhancer'
 		) . '</p>';
 	}
 
@@ -819,7 +819,7 @@ final class Coywolf_CBE_Settings {
 		$link = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( $url ),
-			esc_html__( 'Settings', 'code-block-enhancer' )
+			esc_html__( 'Settings', 'coywolf-code-block-enhancer' )
 		);
 		array_unshift( $links, $link );
 		return $links;
@@ -857,9 +857,9 @@ final class Coywolf_CBE_Settings {
 
 		echo '<p class="description">' . esc_html__(
 			'The "Default — Auto" palette follows each visitor\'s OS dark-mode preference and is selected on first install. The two "Always" variants lock it to one appearance. The Prism themes below are static — they always render in their designed light or dark colours.',
-			'code-block-enhancer'
+			'coywolf-code-block-enhancer'
 		) . ' ';
-		echo '<strong>' . esc_html__( 'Changing the dropdown only updates the preview below — your site keeps the saved theme until you click Save Changes.', 'code-block-enhancer' ) . '</strong>';
+		echo '<strong>' . esc_html__( 'Changing the dropdown only updates the preview below — your site keeps the saved theme until you click Save Changes.', 'coywolf-code-block-enhancer' ) . '</strong>';
 		echo '</p>';
 
 		$sample = "<?php\n"
@@ -887,7 +887,7 @@ final class Coywolf_CBE_Settings {
 		?>
 		<div class="cbe-preview" style="max-width:48rem;margin-top:1rem;">
 			<p style="margin:0 0 0.5rem;color:#646970;font-size:0.85em;">
-				<?php esc_html_e( 'Preview', 'code-block-enhancer' ); ?>
+				<?php esc_html_e( 'Preview', 'coywolf-code-block-enhancer' ); ?>
 			</p>
 			<pre class="wp-block-code" data-language="php"><code class="language-php"><?php echo esc_html( $sample ); ?></code></pre>
 			<p style="margin:0.5rem 0 0;font-size:0.85em;">
@@ -897,13 +897,13 @@ final class Coywolf_CBE_Settings {
 					<?php
 					printf(
 						/* translators: %s is the CSS filename. */
-						esc_html__( 'Download %s', 'code-block-enhancer' ),
+						esc_html__( 'Download %s', 'coywolf-code-block-enhancer' ),
 						'<code>' . esc_html( $dl_name ) . '</code>'
 					);
 					?>
 				</a>
 				<span style="color:#646970;">
-					— <?php esc_html_e( 'edit it and re-upload as a custom theme below.', 'code-block-enhancer' ); ?>
+					— <?php esc_html_e( 'edit it and re-upload as a custom theme below.', 'coywolf-code-block-enhancer' ); ?>
 				</span>
 			</p>
 		</div>
@@ -917,24 +917,24 @@ final class Coywolf_CBE_Settings {
 		$status = sanitize_key( wp_unslash( $_GET['cbe_upload'] ) );
 		$kb     = (int) round( self::CUSTOM_MAX_BYTES / 1024 );
 		$map = array(
-			'ok'           => array( 'success', __( 'Custom theme uploaded.', 'code-block-enhancer' ) ),
-			'removed'      => array( 'success', __( 'Custom theme removed.', 'code-block-enhancer' ) ),
-			'missing'      => array( 'error',   __( 'No file was uploaded.', 'code-block-enhancer' ) ),
-			'error'        => array( 'error',   __( 'The upload failed. Please try again.', 'code-block-enhancer' ) ),
+			'ok'           => array( 'success', __( 'Custom theme uploaded.', 'coywolf-code-block-enhancer' ) ),
+			'removed'      => array( 'success', __( 'Custom theme removed.', 'coywolf-code-block-enhancer' ) ),
+			'missing'      => array( 'error',   __( 'No file was uploaded.', 'coywolf-code-block-enhancer' ) ),
+			'error'        => array( 'error',   __( 'The upload failed. Please try again.', 'coywolf-code-block-enhancer' ) ),
 			'too_large'    => array(
 				'error',
 				sprintf(
 					/* translators: %d is the size limit in KB. */
-					__( 'The file is larger than the %dKB limit.', 'code-block-enhancer' ),
+					__( 'The file is larger than the %dKB limit.', 'coywolf-code-block-enhancer' ),
 					$kb
 				),
 			),
-			'not_css'      => array( 'error',   __( 'Only .css files are accepted.', 'code-block-enhancer' ) ),
-			'bad_mime'     => array( 'error',   __( "The file didn't look like a CSS file (MIME mismatch).", 'code-block-enhancer' ) ),
-			'read_error'   => array( 'error',   __( 'Could not read the uploaded file.', 'code-block-enhancer' ) ),
-			'unsafe'       => array( 'error',   __( 'The file contained markup or scripts that are not allowed in a CSS theme (e.g. <script>, <?php, javascript: URIs, expression()). Nothing was saved.', 'code-block-enhancer' ) ),
-			'mkdir_failed' => array( 'error',   __( 'Could not create the uploads directory.', 'code-block-enhancer' ) ),
-			'write_failed' => array( 'error',   __( 'Could not write the file to disk.', 'code-block-enhancer' ) ),
+			'not_css'      => array( 'error',   __( 'Only .css files are accepted.', 'coywolf-code-block-enhancer' ) ),
+			'bad_mime'     => array( 'error',   __( "The file didn't look like a CSS file (MIME mismatch).", 'coywolf-code-block-enhancer' ) ),
+			'read_error'   => array( 'error',   __( 'Could not read the uploaded file.', 'coywolf-code-block-enhancer' ) ),
+			'unsafe'       => array( 'error',   __( 'The file contained markup or scripts that are not allowed in a CSS theme (e.g. <script>, <?php, javascript: URIs, expression()). Nothing was saved.', 'coywolf-code-block-enhancer' ) ),
+			'mkdir_failed' => array( 'error',   __( 'Could not create the uploads directory.', 'coywolf-code-block-enhancer' ) ),
+			'write_failed' => array( 'error',   __( 'Could not write the file to disk.', 'coywolf-code-block-enhancer' ) ),
 		);
 		if ( ! isset( $map[ $status ] ) ) {
 			return;
@@ -966,7 +966,7 @@ final class Coywolf_CBE_Settings {
 			echo esc_html(
 				sprintf(
 					/* translators: %d is the upload size limit in KB. */
-					__( 'Upload a single .css file (up to %dKB). Only one custom theme is stored at a time — uploading a new file replaces the existing one. The file is checked for unsafe content (script tags, PHP open tags, javascript: URIs, expression(), etc.) before being written, and is served from your uploads directory with the rest of your media.', 'code-block-enhancer' )
+					__( 'Upload a single .css file (up to %dKB). Only one custom theme is stored at a time — uploading a new file replaces the existing one. The file is checked for unsafe content (script tags, PHP open tags, javascript: URIs, expression(), etc.) before being written, and is served from your uploads directory with the rest of your media.', 'coywolf-code-block-enhancer' )
 					, $kb
 				)
 			);
@@ -975,7 +975,7 @@ final class Coywolf_CBE_Settings {
 
 		<?php if ( $meta ) : ?>
 			<p>
-				<strong><?php esc_html_e( 'Current custom theme:', 'code-block-enhancer' ); ?></strong>
+				<strong><?php esc_html_e( 'Current custom theme:', 'coywolf-code-block-enhancer' ); ?></strong>
 				<?php
 				$display = ! empty( $meta['name'] ) ? $meta['name'] : $meta['original_name'];
 				echo esc_html( $display );
@@ -987,7 +987,7 @@ final class Coywolf_CBE_Settings {
 				<?php
 				printf(
 					/* translators: %s is a human-readable time difference, e.g. "5 minutes". */
-					esc_html__( 'uploaded %s ago', 'code-block-enhancer' ),
+					esc_html__( 'uploaded %s ago', 'coywolf-code-block-enhancer' ),
 					esc_html( human_time_diff( $meta['uploaded_at'], time() ) )
 				);
 				?>)
@@ -998,25 +998,25 @@ final class Coywolf_CBE_Settings {
 			<input type="hidden" name="action" value="cbe_upload_custom_theme" />
 			<?php wp_nonce_field( 'cbe_upload_custom_theme' ); ?>
 			<p style="margin:0.25rem 0;">
-				<label for="cbe_custom_theme_name"><strong><?php esc_html_e( 'Theme name', 'code-block-enhancer' ); ?></strong></label><br />
+				<label for="cbe_custom_theme_name"><strong><?php esc_html_e( 'Theme name', 'coywolf-code-block-enhancer' ); ?></strong></label><br />
 				<input type="text"
 				       id="cbe_custom_theme_name"
 				       name="cbe_custom_theme_name"
 				       maxlength="60"
 				       class="regular-text"
 				       value="<?php echo esc_attr( $meta ? $meta['name'] : '' ); ?>"
-				       placeholder="<?php esc_attr_e( 'e.g. My Brand Dark', 'code-block-enhancer' ); ?>" />
+				       placeholder="<?php esc_attr_e( 'e.g. My Brand Dark', 'coywolf-code-block-enhancer' ); ?>" />
 				<span class="description" style="display:block;">
-					<?php esc_html_e( 'Shown as the dropdown label, e.g. "Custom — My Brand Dark". Optional — the filename is used if left blank. Max 60 characters.', 'code-block-enhancer' ); ?>
+					<?php esc_html_e( 'Shown as the dropdown label, e.g. "Custom — My Brand Dark". Optional — the filename is used if left blank. Max 60 characters.', 'coywolf-code-block-enhancer' ); ?>
 				</span>
 			</p>
 			<p style="margin:0.5rem 0;">
-				<label for="cbe_custom_theme"><strong><?php esc_html_e( 'CSS file', 'code-block-enhancer' ); ?></strong></label><br />
+				<label for="cbe_custom_theme"><strong><?php esc_html_e( 'CSS file', 'coywolf-code-block-enhancer' ); ?></strong></label><br />
 				<input type="file" id="cbe_custom_theme" name="cbe_custom_theme" accept=".css,text/css" required />
 			</p>
 			<p style="margin:0.5rem 0;">
 				<?php submit_button(
-					$meta ? __( 'Replace custom theme', 'code-block-enhancer' ) : __( 'Upload custom theme', 'code-block-enhancer' ),
+					$meta ? __( 'Replace custom theme', 'coywolf-code-block-enhancer' ) : __( 'Upload custom theme', 'coywolf-code-block-enhancer' ),
 					'secondary',
 					'cbe_upload_submit',
 					false
@@ -1025,10 +1025,10 @@ final class Coywolf_CBE_Settings {
 		</form>
 
 		<?php if ( $meta ) : ?>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_attr( esc_js( __( 'Remove the custom theme? This cannot be undone.', 'code-block-enhancer' ) ) ); ?>');" style="margin:0;">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_attr( esc_js( __( 'Remove the custom theme? This cannot be undone.', 'coywolf-code-block-enhancer' ) ) ); ?>');" style="margin:0;">
 				<input type="hidden" name="action" value="cbe_remove_custom_theme" />
 				<?php wp_nonce_field( 'cbe_remove_custom_theme' ); ?>
-				<?php submit_button( __( 'Remove custom theme', 'code-block-enhancer' ), 'delete', 'cbe_remove_submit', false ); ?>
+				<?php submit_button( __( 'Remove custom theme', 'coywolf-code-block-enhancer' ), 'delete', 'cbe_remove_submit', false ); ?>
 			</form>
 		<?php endif; ?>
 		<?php
