@@ -87,3 +87,11 @@
 .code-copy-feedback.is-visible {
 	opacity: 1;
 }
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3). */
+@media ( prefers-reduced-motion: reduce ) {
+	.code-copy-btn,
+	.code-copy-feedback {
+		transition: none;
+	}
+}

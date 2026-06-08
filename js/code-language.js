@@ -4,6 +4,7 @@
 	const { Fragment, createElement: el } = wp.element;
 	const { InspectorControls } = wp.blockEditor;
 	const { PanelBody, SelectControl } = wp.components;
+	const { __ } = wp.i18n;
 
 	// The list of choices is built server-side from the active baseline +
 	// language packs (Tools → Code Blocks → Language packs) and injected
@@ -11,7 +12,7 @@
 	// is { value, label } and the empty value is the "None" option.
 	const LANGUAGES = Array.isArray( window.cbeLanguageChoices ) && window.cbeLanguageChoices.length
 		? window.cbeLanguageChoices
-		: [ { value: '', label: 'None (plain text)' } ];
+		: [ { value: '', label: __( 'None (plain text)', 'coywolf-code-block-enhancer' ) } ];
 
 	// 1. Register a `language` attribute on the core Code block.
 	addFilter(
@@ -43,9 +44,9 @@
 					null,
 					el(
 						PanelBody,
-						{ title: 'Code language', initialOpen: true },
+						{ title: __( 'Code language', 'coywolf-code-block-enhancer' ), initialOpen: true },
 						el( SelectControl, {
-							label: 'Syntax highlighting',
+							label: __( 'Syntax highlighting', 'coywolf-code-block-enhancer' ),
 							value: props.attributes.language,
 							options: LANGUAGES,
 							onChange: function ( value ) {

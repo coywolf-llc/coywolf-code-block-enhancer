@@ -3,7 +3,7 @@
  * Plugin Name:       Coywolf Code Block Enhancer
  * Plugin URI:        https://coywolf.com/notes/code-block-enhancer-syntax-highlighter-and-code-copier-plugin-for-native-wordpress-code-blocks/
  * Description:       Adds a Tools → Code Blocks option to apply Prism.js syntax highlighting and a copy code to clipboard button to the native WordPress Code block. Assets load only on posts that contain a code block.
- * Version:           1.0.52
+ * Version:           1.0.53
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            Coywolf
@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CBE_VERSION', '1.0.52' );
+define( 'CBE_VERSION', '1.0.53' );
 define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
 define( 'CBE_PLUGIN_FILE', __FILE__ );
 
@@ -69,10 +69,11 @@ add_action( 'enqueue_block_editor_assets', function () {
 	wp_enqueue_script(
 		'cbe-code-language',
 		CBE_URL . 'js/code-language.js',
-		array( 'wp-hooks', 'wp-compose', 'wp-element', 'wp-block-editor', 'wp-components' ),
+		array( 'wp-hooks', 'wp-compose', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' ),
 		CBE_VERSION,
 		true
 	);
+	wp_set_script_translations( 'cbe-code-language', 'coywolf-code-block-enhancer' );
 	wp_add_inline_script(
 		'cbe-code-language',
 		'window.cbeLanguageChoices = ' . wp_json_encode( Coywolf_CBE_Language_Packs::active_language_choices() ) . ';',

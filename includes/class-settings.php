@@ -244,20 +244,31 @@ final class Coywolf_CBE_Settings {
 	 * @return array{original_name:string, name:string, uploaded_at:int, byte_size:int}|null
 	 */
 	public static function custom_theme_meta() {
-		$meta = get_option( self::CUSTOM_OPTION, null );
+		// Memoize per request: this runs on wp_enqueue_scripts and the body_class
+		// filter (and again via themes()), so without caching the get_option +
+		// file_exists stat repeats several times on every front-end page. The
+		// custom theme can only change via an admin POST that redirects, so the
+		// value is stable within a single request. ( false = not yet computed. )
+		static $cache = false;
+		if ( false !== $cache ) {
+			return $cache;
+		}
+		$cache = null;
+		$meta  = get_option( self::CUSTOM_OPTION, null );
 		if ( ! is_array( $meta ) || empty( $meta['original_name'] ) ) {
-			return null;
+			return $cache;
 		}
 		$path = self::custom_dir() . self::CUSTOM_FILE;
 		if ( ! file_exists( $path ) ) {
-			return null;
+			return $cache;
 		}
-		return array(
+		$cache = array(
 			'original_name' => (string) $meta['original_name'],
 			'name'          => isset( $meta['name'] ) ? (string) $meta['name'] : '',
 			'uploaded_at'   => isset( $meta['uploaded_at'] ) ? (int) $meta['uploaded_at'] : 0,
 			'byte_size'     => isset( $meta['byte_size'] ) ? (int) $meta['byte_size'] : (int) filesize( $path ),
 		);
+		return $cache;
 	}
 
 	/**
@@ -297,7 +308,11 @@ final class Coywolf_CBE_Settings {
 		// Normalise line endings.
 		$raw = str_replace( array( "\r\n", "\r" ), "\n", $raw );
 
-		// Reject if any of these dangerous tokens appear anywhere.
+		// Reject if any of these dangerous tokens appear anywhere. Besides the
+		// classic injection vectors, we block @import and remote / protocol-
+		// relative url() so an uploaded stylesheet cannot pull from or beacon to
+		// a third-party origin (privacy / SSRF) on the front end. Relative and
+		// data:image url()s stay allowed.
 		$forbidden = array(
 			'/<\s*script\b/i',
 			'/<\s*\/\s*script\s*>/i',
@@ -310,6 +325,8 @@ final class Coywolf_CBE_Settings {
 			'/expression\s*\(/i',
 			'/behavior\s*:/i',
 			'/-moz-binding\s*:/i',
+			'/@import\b/i',
+			'/url\s*\(\s*[\'"]?\s*(?:https?:)?\/\//i',
 		);
 		foreach ( $forbidden as $pattern ) {
 			if ( preg_match( $pattern, $raw ) ) {
@@ -944,7 +961,7 @@ final class Coywolf_CBE_Settings {
 		}
 		list( $type, $msg ) = $map[ $status ];
 		printf(
-			'<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+			'<div class="notice notice-%s is-dismissible" role="alert"><p>%s</p></div>',
 			esc_attr( $type ),
 			esc_html( $msg )
 		);
