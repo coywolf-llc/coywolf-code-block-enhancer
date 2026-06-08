@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.52
+Stable tag: 1.0.53
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -101,13 +101,11 @@ without highlighting.
 
 = How do I add another language? =
 
-Two places need to stay in sync:
-
-1. Add the Prism grammar to the `$chain` array in `code-block-enhancer.php`,
-   minding dependency order (e.g. `markup-templating` must load before
-   `php`; languages that extend `clike` need `clike` registered first).
-2. Add a matching entry — `{ label, value }` — to the `LANGUAGES` list in
-   `js/code-language.js` so it appears in the editor dropdown.
+Open **Tools → Code Blocks → Language packs** and enable the pack that
+contains the language you need. The baseline 9 languages are always
+available; the other 40 grammars are grouped into packs you can toggle on.
+Anything you enable shows up in the Code block's "Code language" dropdown
+automatically — no code editing required.
 
 = Will this break my existing code blocks? =
 
@@ -162,12 +160,13 @@ stored at a time — the plugin doesn't manage a library.
 Security checks before the file is written:
 
 * Capability (`manage_options`) and nonce checks on the form submission.
-* Filename must end in `.css`; MIME validated via
-  `wp_check_filetype_and_ext()`.
+* Filename must end in `.css`.
 * Size capped at 256 KB.
 * Content is rejected outright if it contains `<script>`, `<?php` /
   `<?=`, `javascript:` / `vbscript:` URIs, `data:text/html`,
-  `expression(`, `behavior:`, or `-moz-binding:` anywhere in the file.
+  `expression(`, `behavior:`, `-moz-binding:`, `@import`, or a remote /
+  protocol-relative `url()` (so an uploaded theme can't fetch from or
+  beacon to a third-party origin) anywhere in the file.
 * File is written to `wp-content/uploads/code-block-enhancer/custom.css`
   (alongside your other media), not into the plugin directory —
   updating the plugin doesn't blow it away.
@@ -188,6 +187,7 @@ The label only renders when a language is set (the CSS rule is
 before the plugin was installed, open it in the editor and pick a
 language from the sidebar so the `language` attribute is saved.
 
+<!-- wporg-strip:start -->
 = Where do plugin updates come from? =
 
 Releases are published to this plugin's GitHub repository
@@ -195,6 +195,7 @@ Releases are published to this plugin's GitHub repository
 Releases (cached for 6 hours) and offers any newer version through the
 standard WordPress Dashboard → Updates / "Update Now" flow. Downloads
 are restricted to a GitHub host allowlist as a safety check.
+<!-- wporg-strip:end -->
 
 == Screenshots ==
 
@@ -202,6 +203,13 @@ are restricted to a GitHub host allowlist as a safety check.
 2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
 
 == Changelog ==
+
+= 1.0.53 =
+* Security: the custom CSS theme check now also blocks @import and remote / protocol-relative url(), so an uploaded theme cannot fetch from or beacon to a third-party origin.
+* Editor: the "Code language" sidebar control is now translatable (i18n).
+* Accessibility: honor prefers-reduced-motion, raise the dark-mode language-label contrast to WCAG AA, and announce custom-theme admin notices to screen readers (role="alert").
+* Performance: memoize the custom-theme lookup so it is not re-read on every front-end request.
+* Docs/build: strip the GitHub-updates FAQ from the WordPress.org build, and correct the upload-security and "add a language" docs.
 
 = 1.0.52 =
 * Render plugin screenshots in the GitHub readme (#53).

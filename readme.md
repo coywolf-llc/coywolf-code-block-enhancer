@@ -4,7 +4,7 @@
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
-- **Version:** 1.0.52
+- **Version:** 1.0.53
 - **Requires WordPress:** 6.3 or later
 - **Tested up to:** 7.0
 - **Requires PHP:** 7.4 or later
@@ -47,10 +47,7 @@ Bash/Shell, CSS, HTML/Markup, JavaScript, JSON, PHP, Python, SQL, and YAML. The 
 
 ### How do I add another language?
 
-Two places need to stay in sync:
-
-1. Add the Prism grammar to the `$chain` array in `code-block-enhancer.php`, minding dependency order (e.g. `markup-templating` must load before `php`; languages that extend `clike` need `clike` registered first).
-2. Add a matching entry — `{ label, value }` — to the `LANGUAGES` list in `js/code-language.js` so it appears in the editor dropdown.
+Open **Tools → Code Blocks → Language packs** and enable the pack that contains the language you need. The baseline 9 languages are always available; the other 40 grammars are grouped into packs you can toggle on. Anything you enable shows up in the Code block's "Code language" dropdown automatically — no code editing required.
 
 ### Will this break my existing code blocks?
 
@@ -109,6 +106,13 @@ A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf G
 ![Front-end output](.wordpress-org/screenshot-2.png)
 
 ## Changelog
+
+### 1.0.53
+- Security: the custom CSS theme check now also blocks `@import` and remote / protocol-relative `url()`, so an uploaded theme cannot fetch from or beacon to a third-party origin.
+- Editor: the "Code language" sidebar control is now translatable (i18n).
+- Accessibility: honor `prefers-reduced-motion`, raise the dark-mode language-label contrast to WCAG AA, and announce custom-theme admin notices to screen readers (`role="alert"`).
+- Performance: memoize the custom-theme lookup so it is not re-read on every front-end request.
+- Docs/build: strip the GitHub-updates FAQ from the WordPress.org build, and correct the upload-security and "add a language" docs.
 
 ### 1.0.52
 - Render plugin screenshots in the GitHub readme (#53).

@@ -33,7 +33,7 @@
 	.wp-block-code {
 		--cbe-bg:                #050520;
 		--cbe-fg:                #e6edf3;
-		--cbe-label:             #6e7681;
+		--cbe-label:             #8b949e;
 		--cbe-token-comment:     #8b949e;
 		--cbe-token-punctuation: #c9d1d9;
 		--cbe-token-keyword:     #c084fc;
@@ -76,7 +76,7 @@ body.cbe-theme-light .wp-block-code {
 body.cbe-theme-dark .wp-block-code {
 	--cbe-bg:                #050520;
 	--cbe-fg:                #e6edf3;
-	--cbe-label:             #6e7681;
+	--cbe-label:             #8b949e;
 	--cbe-token-comment:     #8b949e;
 	--cbe-token-punctuation: #c9d1d9;
 	--cbe-token-keyword:     #c084fc;
