@@ -93,6 +93,10 @@ The label only renders when a language is set (the CSS rule is `.wp-block-code[d
 
 Releases are published to this plugin's [GitHub repository](https://github.com/coywolf-llc/coywolf-code-block-enhancer). The plugin checks GitHub Releases (cached for 6 hours) and offers any newer version through the standard WordPress **Dashboard → Updates** / "Update Now" flow. Downloads are restricted to a GitHub host allowlist as a safety check.
 
+## Privacy
+
+Privacy-first: this plugin includes no analytics, no tracking, and no data gathering. Nothing about you, your site, or your visitors is ever collected or sent anywhere.
+
 ## Screenshots
 
 ### Settings
