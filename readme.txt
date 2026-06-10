@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.53
+Stable tag: 1.0.54
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -207,6 +207,9 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
 
 == Changelog ==
+
+= 1.0.54 =
+* Readme: state the privacy-first stance (no analytics, no data gathering) (#55).
 
 = 1.0.53 =
 * Security: the custom CSS theme check now also blocks @import and remote / protocol-relative url(), so an uploaded theme cannot fetch from or beacon to a third-party origin.
