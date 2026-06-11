@@ -36,9 +36,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CBE_VERSION', '1.0.54' );
-define( 'CBE_URL', plugin_dir_url( __FILE__ ) );
-define( 'CBE_PLUGIN_FILE', __FILE__ );
+define( 'COYWOLF_CBE_VERSION', '1.0.54' );
+define( 'COYWOLF_CBE_URL', plugin_dir_url( __FILE__ ) );
+define( 'COYWOLF_CBE_PLUGIN_FILE', __FILE__ );
 
 /* wporg-strip:start — GitHub self-updater (removed from the WordPress.org build) */
 require_once __DIR__ . '/includes/class-github-updater.php';
@@ -48,7 +48,7 @@ require_once __DIR__ . '/includes/class-settings.php';
 
 /* wporg-strip:start — GitHub self-updater (removed from the WordPress.org build) */
 // Pull updates from GitHub Releases via the standard WP update flow.
-( new Coywolf_CBE_GitHub_Updater( __FILE__, CBE_VERSION ) )->init();
+( new Coywolf_CBE_GitHub_Updater( __FILE__, COYWOLF_CBE_VERSION ) )->init();
 /* wporg-strip:end */
 
 // Tools → Code Blocks settings page (Theme: Default-palette variants or
@@ -67,16 +67,16 @@ require_once __DIR__ . '/includes/class-settings.php';
  */
 add_action( 'enqueue_block_editor_assets', function () {
 	wp_enqueue_script(
-		'cbe-code-language',
-		CBE_URL . 'js/code-language.js',
+		'coywolf-cbe-code-language',
+		COYWOLF_CBE_URL . 'js/code-language.js',
 		array( 'wp-hooks', 'wp-compose', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' ),
-		CBE_VERSION,
+		COYWOLF_CBE_VERSION,
 		true
 	);
-	wp_set_script_translations( 'cbe-code-language', 'coywolf-code-block-enhancer' );
+	wp_set_script_translations( 'coywolf-cbe-code-language', 'coywolf-code-block-enhancer' );
 	wp_add_inline_script(
-		'cbe-code-language',
-		'window.cbeLanguageChoices = ' . wp_json_encode( Coywolf_CBE_Language_Packs::active_language_choices() ) . ';',
+		'coywolf-cbe-code-language',
+		'window.coywolfCbeLanguageChoices = ' . wp_json_encode( Coywolf_CBE_Language_Packs::active_language_choices() ) . ';',
 		'before'
 	);
 } );
@@ -90,7 +90,7 @@ add_action( 'wp_enqueue_scripts', function () {
 	// assets/prism/LICENSE). Self-hosting eliminates the third-party CDN as
 	// a supply-chain surface: a compromised cdnjs path would otherwise have
 	// injected arbitrary JS into every page that loads a code block.
-	$prism = CBE_URL . 'assets/prism/';
+	$prism = COYWOLF_CBE_URL . 'assets/prism/';
 
 	// defer = non-render-blocking while preserving execution order across the
 	// dependency chain. async would NOT preserve order and would break grammars.
@@ -99,21 +99,22 @@ add_action( 'wp_enqueue_scripts', function () {
 		'in_footer' => true,
 	);
 
-	// Prism core.
-	wp_register_script( 'prism', $prism . 'prism-core.min.js', array(), '1.30.0', $args );
+	// Prism core. The handle carries the plugin prefix — a bare `prism`
+	// handle would collide with any other plugin that registers Prism.
+	wp_register_script( 'coywolf-cbe-prism', $prism . 'prism-core.min.js', array(), '1.30.0', $args );
 
 	// Each active grammar gets registered with its REAL dependency list
 	// (mapped to script handles) — not the cumulative chain we used to
-	// build. That way when render_block enqueues `prism-php`, WP only
-	// pulls in the grammars `prism-php` actually needs (markup,
-	// markup-templating, clike) plus core, not every grammar on the site.
+	// build. That way when render_block enqueues the PHP grammar, WP only
+	// pulls in the grammars it actually needs (markup, markup-templating,
+	// clike) plus core, not every grammar on the site.
 	foreach ( Coywolf_CBE_Language_Packs::active_handles_with_deps() as $handle => $requires ) {
-		$deps = array( 'prism' );
+		$deps = array( 'coywolf-cbe-prism' );
 		foreach ( $requires as $r ) {
-			$deps[] = 'prism-' . $r;
+			$deps[] = 'coywolf-cbe-prism-' . $r;
 		}
 		wp_register_script(
-			'prism-' . $handle,
+			'coywolf-cbe-prism-' . $handle,
 			$prism . 'prism-' . $handle . '.min.js',
 			array_values( array_unique( $deps ) ),
 			'1.30.0',
@@ -125,36 +126,42 @@ add_action( 'wp_enqueue_scripts', function () {
 	// behaviour that reads code.textContent and doesn't care whether
 	// Prism has tokenised anything.
 	wp_register_script(
-		'cbe-code-blocks',
-		CBE_URL . 'js/code-blocks.js',
+		'coywolf-cbe-code-blocks',
+		COYWOLF_CBE_URL . 'js/code-blocks.js',
 		array(),
-		CBE_VERSION,
+		COYWOLF_CBE_VERSION,
 		$args
 	);
 
 	// Layout / language label / copy-button chrome (always loaded with the
 	// plugin's own version stamp). Token colours live in the theme file.
-	wp_register_style( 'cbe-style', CBE_URL . 'css/code-block.css', array(), CBE_VERSION );
+	wp_register_style( 'coywolf-cbe-style', COYWOLF_CBE_URL . 'css/code-block.css', array(), COYWOLF_CBE_VERSION );
 
-	// Selected theme stylesheet (depends on cbe-style so token colours can
-	// reference the chrome's CSS custom properties / load after it). Bundled
-	// themes resolve to assets/themes/<file>; an uploaded custom theme
-	// resolves to <uploads>/code-block-enhancer/custom.css?v=<ts>. The key
-	// is whitelisted by the settings sanitiser, so the URL is safe.
-	$theme = Coywolf_CBE_Settings::current_theme_entry();
+	// Selected theme stylesheet (depends on coywolf-cbe-style so token
+	// colours can reference the chrome's CSS custom properties / load after
+	// it). Bundled themes resolve to assets/themes/<file>; an uploaded
+	// custom theme is inline — its sanitised CSS lives in the database and
+	// is attached to a src-less handle via wp_add_inline_style() below.
+	$theme     = Coywolf_CBE_Settings::current_theme_entry();
+	$is_inline = ! empty( $theme['inline'] );
 	wp_register_style(
-		'cbe-theme',
-		Coywolf_CBE_Settings::theme_url( $theme ),
-		array( 'cbe-style' ),
-		CBE_VERSION
+		'coywolf-cbe-theme',
+		$is_inline ? false : Coywolf_CBE_Settings::theme_url( $theme ),
+		array( 'coywolf-cbe-style' ),
+		COYWOLF_CBE_VERSION
 	);
 
 	// Styles must print in <head>, so enqueue here — NOT in render_block, which
 	// runs in the body after the head has already closed. Conditional so the CSS
-	// loads only on singular posts/pages that contain a code block.
+	// loads only on singular posts/pages that contain a code block. The custom
+	// theme's CSS option (up to 256 KB, autoload off) is likewise only read on
+	// pages that actually print it.
 	if ( is_singular() && has_block( 'core/code' ) ) {
-		wp_enqueue_style( 'cbe-style' );
-		wp_enqueue_style( 'cbe-theme' );
+		wp_enqueue_style( 'coywolf-cbe-style' );
+		if ( $is_inline ) {
+			wp_add_inline_style( 'coywolf-cbe-theme', Coywolf_CBE_Settings::custom_theme_css() );
+		}
+		wp_enqueue_style( 'coywolf-cbe-theme' );
 	}
 } );
 
@@ -175,7 +182,7 @@ add_filter( 'render_block', function ( $content, $block ) {
 	// Copy button on every code block. No Prism dependency, so this
 	// alone doesn't pull in any grammar — pages with code blocks that
 	// have no language attribute download only this ~1 KB of JS.
-	wp_enqueue_script( 'cbe-code-blocks' );
+	wp_enqueue_script( 'coywolf-cbe-code-blocks' );
 
 	// Allowlist the language against whatever's actually loadable on the
 	// site right now (baseline + the admin's per-language selection).
@@ -196,7 +203,7 @@ add_filter( 'render_block', function ( $content, $block ) {
 		// markup). Multiple code blocks with the same language enqueue
 		// once; different-language blocks each contribute their own
 		// grammar without re-loading the shared deps.
-		wp_enqueue_script( 'prism-' . $language );
+		wp_enqueue_script( 'coywolf-cbe-prism-' . $language );
 
 		if ( class_exists( 'WP_HTML_Tag_Processor' ) ) {
 			$p = new WP_HTML_Tag_Processor( $content );
@@ -254,12 +261,12 @@ add_action( 'wp_head', function () {
 	$urls = array();
 
 	// Copy-button JS is enqueued for every code block, language or not.
-	$copy_url = cbe_resolve_script_url( 'cbe-code-blocks' );
+	$copy_url = coywolf_cbe_resolve_script_url( 'coywolf-cbe-code-blocks' );
 	if ( $copy_url ) {
 		$urls[] = $copy_url;
 	}
 
-	$languages = cbe_collect_code_block_languages( $post->post_content );
+	$languages = coywolf_cbe_collect_code_block_languages( $post->post_content );
 	if ( ! empty( $languages ) ) {
 		$allowed  = Coywolf_CBE_Language_Packs::active_language_handles();
 		$registry = Coywolf_CBE_Language_Packs::active_handles_with_deps();
@@ -288,12 +295,12 @@ add_action( 'wp_head', function () {
 		}
 
 		// Prism core first (every grammar depends on it).
-		$core_url = cbe_resolve_script_url( 'prism' );
+		$core_url = coywolf_cbe_resolve_script_url( 'coywolf-cbe-prism' );
 		if ( $core_url ) {
 			$urls[] = $core_url;
 		}
 		foreach ( array_keys( $needed ) as $h ) {
-			$url = cbe_resolve_script_url( 'prism-' . $h );
+			$url = coywolf_cbe_resolve_script_url( 'coywolf-cbe-prism-' . $h );
 			if ( $url ) {
 				$urls[] = $url;
 			}
@@ -313,16 +320,16 @@ add_action( 'wp_head', function () {
  * @param string $content Post content with serialised blocks.
  * @return string[]
  */
-function cbe_collect_code_block_languages( $content ) {
+function coywolf_cbe_collect_code_block_languages( $content ) {
 	if ( ! function_exists( 'parse_blocks' ) ) {
 		return array();
 	}
 	$found = array();
-	cbe_walk_blocks_for_languages( parse_blocks( $content ), $found );
+	coywolf_cbe_walk_blocks_for_languages( parse_blocks( $content ), $found );
 	return array_keys( $found );
 }
 
-function cbe_walk_blocks_for_languages( $blocks, &$found ) {
+function coywolf_cbe_walk_blocks_for_languages( $blocks, &$found ) {
 	if ( ! is_array( $blocks ) ) {
 		return;
 	}
@@ -333,7 +340,7 @@ function cbe_walk_blocks_for_languages( $blocks, &$found ) {
 			}
 		}
 		if ( ! empty( $block['innerBlocks'] ) ) {
-			cbe_walk_blocks_for_languages( $block['innerBlocks'], $found );
+			coywolf_cbe_walk_blocks_for_languages( $block['innerBlocks'], $found );
 		}
 	}
 }
@@ -348,7 +355,7 @@ function cbe_walk_blocks_for_languages( $blocks, &$found ) {
  * @param string $handle Registered script handle.
  * @return string|null Full src URL, or null if not registered.
  */
-function cbe_resolve_script_url( $handle ) {
+function coywolf_cbe_resolve_script_url( $handle ) {
 	if ( ! function_exists( 'wp_scripts' ) ) {
 		return null;
 	}
@@ -368,6 +375,7 @@ function cbe_resolve_script_url( $handle ) {
 	if ( $ver ) {
 		$src = add_query_arg( 'ver', $ver, $src );
 	}
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Deliberately re-applying WP core's script_loader_src filter (not introducing a new hook) so the preload URL matches the eventual <script src> byte-for-byte.
 	$src = apply_filters( 'script_loader_src', $src, $handle );
 	return $src ? (string) $src : null;
 }

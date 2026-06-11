@@ -8,16 +8,16 @@
 
 	// The list of choices is built server-side from the active baseline +
 	// language packs (Tools → Code Blocks → Language packs) and injected
-	// via wp_add_inline_script as window.cbeLanguageChoices. Each entry
+	// via wp_add_inline_script as window.coywolfCbeLanguageChoices. Each entry
 	// is { value, label } and the empty value is the "None" option.
-	const LANGUAGES = Array.isArray( window.cbeLanguageChoices ) && window.cbeLanguageChoices.length
-		? window.cbeLanguageChoices
+	const LANGUAGES = Array.isArray( window.coywolfCbeLanguageChoices ) && window.coywolfCbeLanguageChoices.length
+		? window.coywolfCbeLanguageChoices
 		: [ { value: '', label: __( 'None (plain text)', 'coywolf-code-block-enhancer' ) } ];
 
 	// 1. Register a `language` attribute on the core Code block.
 	addFilter(
 		'blocks.registerBlockType',
-		'cbe/code-language-attribute',
+		'coywolf-cbe/code-language-attribute',
 		function ( settings, name ) {
 			if ( name !== 'core/code' ) {
 				return settings;
@@ -61,7 +61,7 @@
 
 	addFilter(
 		'editor.BlockEdit',
-		'cbe/code-language-control',
+		'coywolf-cbe/code-language-control',
 		withLanguageControl
 	);
 } )( window.wp );
