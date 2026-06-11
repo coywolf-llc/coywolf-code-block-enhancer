@@ -2,7 +2,7 @@ name: Release on PR merge
 
 # After a PR merges to main:
 # 1. If the PR did not change the plugin version itself, bump the patch
-#    version (header + CBE_VERSION define + readme Stable tag) and prepend a
+#    version (header + COYWOLF_CBE_VERSION define + readme Stable tag) and prepend a
 #    changelog entry crediting the PR; push that bump back to main.
 # 2. Build a plugin zip and publish it as a GitHub Release tagged "vX.Y.Z".
 
@@ -40,7 +40,7 @@ jobs:
           set -euo pipefail
           # Read the version currently committed on main. That is the source
           # of truth for "what version are we trying to ship?".
-          CURR=$(grep -oE "define\(\s*'CBE_VERSION',\s*'[^']+'" \
+          CURR=$(grep -oE "define\(\s*'COYWOLF_CBE_VERSION',\s*'[^']+'" \
             code-block-enhancer.php \
             | grep -oE "[0-9]+\.[0-9]+\.[0-9]+")
           echo "curr=$CURR" >> "$GITHUB_OUTPUT"
@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           sed -i -E "s|(Version:[[:space:]]+)${CURR//./\\.}\b|\1${NEW}|" code-block-enhancer.php
-          sed -i -E "s|(define\(\s*'CBE_VERSION',\s*')${CURR//./\\.}(')|\1${NEW}\2|" code-block-enhancer.php
+          sed -i -E "s|(define\(\s*'COYWOLF_CBE_VERSION',\s*')${CURR//./\\.}(')|\1${NEW}\2|" code-block-enhancer.php
           sed -i -E "s|(Stable tag:[[:space:]]+)${CURR//./\\.}\b|\1${NEW}|" readme.txt
           # readme.md mirror: bump the **Version:** bullet too (if present).
           if [ -f readme.md ]; then

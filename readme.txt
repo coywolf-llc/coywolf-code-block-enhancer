@@ -48,7 +48,8 @@ copy-to-clipboard button to the top-right corner.
 * Upload a custom theme — drop in a single `.css` file (up to 256 KB)
   and it shows up in the dropdown as a "Custom" option. The file is
   checked for unsafe content (script tags, PHP open tags, `javascript:`
-  URIs, `expression()`, etc.) before being saved. Only one custom theme
+  URIs, `expression()`, etc.) and the stylesheet is then stored in your
+  database — nothing is written to the filesystem. Only one custom theme
   is stored at a time — uploading replaces, removing wipes.
 <!-- wporg-strip:start -->
 * In-WordPress updates: new versions are pulled from this project's
@@ -153,11 +154,11 @@ per request — so it composes cleanly with caching plugins.
 Yes. Scroll past the dropdown on **Tools → Code Blocks** to the
 **Custom theme** section and upload a single `.css` file (up to 256
 KB). It's added to the dropdown under a **Custom** group so you can
-select it like any other theme. Replacing the upload swaps the file in
-place; **Remove custom theme** deletes it. Only one custom theme is
-stored at a time — the plugin doesn't manage a library.
+select it like any other theme. Replacing the upload swaps the
+stylesheet in place; **Remove custom theme** deletes it. Only one
+custom theme is stored at a time — the plugin doesn't manage a library.
 
-Security checks before the file is written:
+Security checks before the stylesheet is stored:
 
 * Capability (`manage_options`) and nonce checks on the form submission.
 * Filename must end in `.css`.
@@ -167,9 +168,10 @@ Security checks before the file is written:
   `expression(`, `behavior:`, `-moz-binding:`, `@import`, or a remote /
   protocol-relative `url()` (so an uploaded theme can't fetch from or
   beacon to a third-party origin) anywhere in the file.
-* File is written to `wp-content/uploads/code-block-enhancer/custom.css`
-  (alongside your other media), not into the plugin directory —
-  updating the plugin doesn't blow it away.
+* The sanitised CSS is stored in your database (no file is ever written
+  to disk) and printed inline on pages that contain a code block —
+  updating the plugin doesn't blow it away, and nothing user-supplied
+  is publicly served from your uploads folder.
 
 = Where do the Prism themes come from? =
 

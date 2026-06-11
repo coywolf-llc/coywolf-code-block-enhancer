@@ -20,7 +20,7 @@ Coywolf Code Block Enhancer extends the built-in `core/code` block. In the edito
 - Adds an accessible copy-to-clipboard button — `aria-label`, a polite status region that announces "Copied to clipboard," and a visible "✓" state for two seconds after a successful copy. Falls back to `document.execCommand('copy')` on non-HTTPS or older browsers.
 - Assets load only on singular posts/pages that contain a code block; Prism core and grammars are loaded with the `defer` strategy so they never block rendering.
 - **Dark-mode aware** out of the box — with the bundled **Default — Auto** theme (selected on first install), code blocks follow each visitor's `prefers-color-scheme` automatically. Override from **Tools → Code Blocks** by switching to **Default — Always light** / **Always dark**, or by picking any of the static Prism themes.
-- **Upload a custom theme.** Drop in a single `.css` file (up to 256 KB) and it shows up in the dropdown as a "Custom" option. The file is checked for unsafe content (script tags, PHP open tags, `javascript:` URIs, `expression()`, etc.) before being saved. Only one custom theme is stored at a time — uploading replaces, removing wipes.
+- **Upload a custom theme.** Drop in a single `.css` file (up to 256 KB) and it shows up in the dropdown as a "Custom" option. The file is checked for unsafe content (script tags, PHP open tags, `javascript:` URIs, `expression()`, etc.) and the stylesheet is then stored in your database — nothing is written to the filesystem. Only one custom theme is stored at a time — uploading replaces, removing wipes.
 - In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard **Dashboard → Updates** flow (latest release cached for 6 hours). Downloads are pinned to a GitHub host allowlist as a safety check.
 
 ### How it works
@@ -71,15 +71,15 @@ If you're on the bundled **Default — Auto** theme (the first-install default),
 
 ### Can I use my own theme?
 
-Yes. Scroll past the dropdown on **Tools → Code Blocks** to the **Custom theme** section and upload a single `.css` file (up to 256 KB). It's added to the dropdown under a **Custom** group so you can select it like any other theme. Replacing the upload swaps the file in place; **Remove custom theme** deletes it. Only one custom theme is stored at a time — the plugin doesn't manage a library.
+Yes. Scroll past the dropdown on **Tools → Code Blocks** to the **Custom theme** section and upload a single `.css` file (up to 256 KB). It's added to the dropdown under a **Custom** group so you can select it like any other theme. Replacing the upload swaps the stylesheet in place; **Remove custom theme** deletes it. Only one custom theme is stored at a time — the plugin doesn't manage a library.
 
-Security checks before the file is written:
+Security checks before the stylesheet is stored:
 
 - Capability (`manage_options`) and nonce checks on the form submission.
-- Filename must end in `.css`; MIME validated via `wp_check_filetype_and_ext()`.
+- Filename must end in `.css`.
 - Size capped at 256 KB.
-- Content is rejected outright if it contains `<script>`, `<?php` / `<?=`, `javascript:` / `vbscript:` URIs, `data:text/html`, `expression(`, `behavior:`, or `-moz-binding:` anywhere in the file.
-- File is written to `wp-content/uploads/code-block-enhancer/custom.css` (alongside your other media), not into the plugin directory — updating the plugin doesn't blow it away.
+- Content is rejected outright if it contains `<script>`, `<?php` / `<?=`, `javascript:` / `vbscript:` URIs, `data:text/html`, `expression(`, `behavior:`, `-moz-binding:`, `@import`, or a remote / protocol-relative `url()` (so an uploaded theme can't fetch from or beacon to a third-party origin) anywhere in the file.
+- The sanitised CSS is stored in your database (no file is ever written to disk) and printed inline on pages that contain a code block — updating the plugin doesn't blow it away, and nothing user-supplied is publicly served from your uploads folder.
 
 ### Where do the Prism themes come from?
 

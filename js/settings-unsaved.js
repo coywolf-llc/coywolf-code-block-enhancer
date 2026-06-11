@@ -27,9 +27,9 @@
 	// back on the settings page after a "Save and leave" flow, finish
 	// the jump now.
 	try {
-		var pending = window.sessionStorage.getItem( 'cbe_after_save_redirect' );
+		var pending = window.sessionStorage.getItem( 'coywolf_cbe_after_save_redirect' );
 		if ( pending && window.location.search.indexOf( 'settings-updated=true' ) !== -1 ) {
-			window.sessionStorage.removeItem( 'cbe_after_save_redirect' );
+			window.sessionStorage.removeItem( 'coywolf_cbe_after_save_redirect' );
 			window.location.replace( pending );
 			return; // Stop initialising — page is about to unload.
 		}
@@ -205,7 +205,7 @@
 		} );
 		var saveBtn     = makeBtn( 'Save changes', 'button button-primary', function () {
 			try {
-				window.sessionStorage.setItem( 'cbe_after_save_redirect', intendedUrl );
+				window.sessionStorage.setItem( 'coywolf_cbe_after_save_redirect', intendedUrl );
 			} catch ( err ) {
 				// sessionStorage unavailable — fall back to "save here,
 				// user has to click their link again." Better than no

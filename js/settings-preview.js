@@ -5,10 +5,14 @@
  * change. Nothing is written to the database until the user clicks
  * Save Changes — this script only manipulates the admin DOM.
  *
- * Data is injected via wp_localize_script as window.cbeSettingsPreview:
+ * Data is injected via wp_add_inline_script as
+ * window.coywolfCbeSettingsPreview:
  *   {
  *     baseUrl: string,                          // .../assets/themes/
- *     themes:  { [key]: { file?, url?, lock } } // pick `url` if present,
+ *     themes:  { [key]: { file?, css?, lock } } // `css` = raw stylesheet
+ *                                               //   text (the DB-stored
+ *                                               //   custom theme; turned
+ *                                               //   into a Blob URL here),
  *                                               //   else baseUrl + file.
  *                                               // lock: 'light'|'dark'|null
  *   }
@@ -22,8 +26,8 @@
 ( function () {
 	'use strict';
 
-	const select  = document.getElementById( 'cbe_theme' );
-	const data    = window.cbeSettingsPreview || {};
+	const select  = document.getElementById( 'coywolf_cbe_theme' );
+	const data    = window.coywolfCbeSettingsPreview || {};
 	const themes  = data.themes || {};
 	const baseUrl = data.baseUrl || '';
 
@@ -31,10 +35,11 @@
 		return;
 	}
 
-	// The server already enqueued the saved theme as <link id="cbe-preview-theme-css">.
-	// Re-use it so the first dropdown change just rewrites href instead of stacking links.
-	let linkEl = document.getElementById( 'cbe-preview-theme-css-css' )
-		|| document.getElementById( 'cbe-preview-theme-css' );
+	// The server already enqueued the saved theme as
+	// <link id="coywolf-cbe-preview-theme-css">. Re-use it so the first
+	// dropdown change just rewrites href instead of stacking links.
+	let linkEl = document.getElementById( 'coywolf-cbe-preview-theme-css-css' )
+		|| document.getElementById( 'coywolf-cbe-preview-theme-css' );
 
 	function setLockClass( lock ) {
 		const body = document.body;
@@ -50,8 +55,16 @@
 		if ( ! entry ) {
 			return '';
 		}
-		if ( entry.url ) {
-			return entry.url;
+		if ( typeof entry.css === 'string' ) {
+			// The custom theme is stored in the database and shipped as
+			// stylesheet text — wrap it in a Blob URL (once) so the same
+			// <link>-swapping path and the download anchor work unchanged.
+			if ( ! entry._blobUrl ) {
+				entry._blobUrl = URL.createObjectURL(
+					new Blob( [ entry.css ], { type: 'text/css' } )
+				);
+			}
+			return entry._blobUrl;
 		}
 		if ( entry.file && baseUrl ) {
 			return baseUrl + entry.file;
@@ -60,7 +73,7 @@
 	}
 
 	function updateDownloadLink( entry, href ) {
-		const a = document.getElementById( 'cbe-preview-download' );
+		const a = document.getElementById( 'cbe-preview-download' ); // DOM id only — not a WP-registered name.
 		if ( ! a || ! entry ) {
 			return;
 		}
@@ -93,7 +106,7 @@
 
 		if ( ! linkEl ) {
 			linkEl = document.createElement( 'link' );
-			linkEl.id  = 'cbe-preview-theme-css';
+			linkEl.id  = 'coywolf-cbe-preview-theme-css';
 			linkEl.rel = 'stylesheet';
 			document.head.appendChild( linkEl );
 		}

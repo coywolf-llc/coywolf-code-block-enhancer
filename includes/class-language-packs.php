@@ -17,8 +17,9 @@
  * need clike).
  *
  * The active state is persisted as a flat list of enabled language
- * handles in the `cbe_languages` option. Two migrations run on
- * `admin_init` and are each idempotent:
+ * handles in the `coywolf_cbe_languages` option. Two migrations run on
+ * `admin_init` and are each idempotent (a third — the short-prefix
+ * option rename — lives in Coywolf_CBE_Settings and runs first):
  *
  *   maybe_migrate_legacy_packs()      — expand the v1.0.27
  *                                       `cbe_language_packs` pack-keys
@@ -30,7 +31,7 @@
  *                                       v1.0.28 (or earlier via
  *                                       pack-migration), merge the 9
  *                                       former-baseline handles into
- *                                       cbe_languages so the editor
+ *                                       the languages option so the editor
  *                                       dropdown doesn't lose them.
  *                                       Tracked by a one-shot flag
  *                                       option.
@@ -68,9 +69,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Coywolf_CBE_Language_Packs {
 
-	const OPTION              = 'cbe_languages';
-	const LEGACY_PACKS_OPTION = 'cbe_language_packs';
-	const BASELINE_MERGE_FLAG = 'cbe_baseline_merged_v1';
+	const OPTION              = 'coywolf_cbe_languages';
+	const LEGACY_PACKS_OPTION = 'cbe_language_packs'; // Legacy (≤1.0.27) option — read by migration only.
+	const BASELINE_MERGE_FLAG = 'coywolf_cbe_baseline_merged_v1';
 
 	/**
 	 * Per-request memo store. The pack registry and everything derived
@@ -274,7 +275,7 @@ final class Coywolf_CBE_Language_Packs {
 
 	/**
 	 * One-shot migration from v1.0.27's `cbe_language_packs` (array of
-	 * pack keys) to `cbe_languages` (array of handle strings).
+	 * pack keys) to the languages option (array of handle strings).
 	 */
 	public static function maybe_migrate_legacy_packs() {
 		$sentinel = '__cbe_unset__';
@@ -309,7 +310,7 @@ final class Coywolf_CBE_Language_Packs {
 	 * Without this merge, an upgrade would silently strip them from the
 	 * editor dropdown and break highlighting on existing code blocks.
 	 *
-	 * No-op on fresh installs (cbe_languages not set yet — defaults will
+	 * No-op on fresh installs (languages option not set yet — defaults will
 	 * already include the baseline) and on sites that have already run
 	 * the merge (tracked by a one-shot flag option).
 	 */
