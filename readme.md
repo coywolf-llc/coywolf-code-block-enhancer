@@ -20,7 +20,6 @@ Coywolf Code Block Enhancer extends the built-in `core/code` block. In the edito
 - Adds an accessible copy-to-clipboard button — `aria-label`, a polite status region that announces "Copied to clipboard," and a visible "✓" state for two seconds after a successful copy. Falls back to `document.execCommand('copy')` on non-HTTPS or older browsers.
 - Assets load only on singular posts/pages that contain a code block; Prism core and grammars are loaded with the `defer` strategy so they never block rendering.
 - **Dark-mode aware** out of the box — with the bundled **Default — Auto** theme (selected on first install), code blocks follow each visitor's `prefers-color-scheme` automatically. Override from **Tools → Code Blocks** by switching to **Default — Always light** / **Always dark**, or by picking any of the static Prism themes.
-- **Upload a custom theme.** Drop in a single `.css` file (up to 256 KB) and it shows up in the dropdown as a "Custom" option. The file is checked for unsafe content (script tags, PHP open tags, `javascript:` URIs, `expression()`, etc.) and the stylesheet is then stored in your database — nothing is written to the filesystem. Only one custom theme is stored at a time — uploading replaces, removing wipes.
 - In-WordPress updates: new versions are pulled from this project's GitHub Releases through the standard **Dashboard → Updates** flow (latest release cached for 6 hours). Downloads are pinned to a GitHub host allowlist as a safety check.
 
 ### How it works
@@ -29,7 +28,7 @@ The chosen language is stored as a `language` block attribute on `core/code`, wh
 
 On render, the plugin uses `WP_HTML_Tag_Processor` to add `data-language` to the `<pre>` and `language-xxx` to the `<code>` server-side — so KSES won't strip `data-*` attributes for non-admin authors, and there is no block-validation churn.
 
-Prism core and the per-language grammars are bundled under `assets/prism/` at v1.30.0 (MIT — see `assets/prism/LICENSE`). They register as deferred scripts with explicit dependency ordering (e.g. `markup-templating` before `php`, `clike` before languages that extend it). The copy-button script depends on the last grammar in the chain, so all of Prism is present before the copy UI is wired up. Reading `code.textContent` returns the original source even after Prism wraps tokens in spans, so the copied text is unaffected by highlighting.
+Prism core and the per-language grammars are bundled under `assets/prism/` at v1.30.0 (MIT — see `assets/prism/LICENSE.txt`). They register as deferred scripts with explicit dependency ordering (e.g. `markup-templating` before `php`, `clike` before languages that extend it). The copy-button script depends on the last grammar in the chain, so all of Prism is present before the copy UI is wired up. Reading `code.textContent` returns the original source even after Prism wraps tokens in spans, so the copied text is unaffected by highlighting.
 
 Self-hosting Prism (rather than loading from a public CDN) keeps the third-party-script supply chain off the plugin's surface and means the plugin works on sites with strict CSPs or no external egress.
 
@@ -69,21 +68,9 @@ Go to **Tools → Code Blocks** in WP Admin. The **Code block theme** dropdown l
 
 If you're on the bundled **Default — Auto** theme (the first-install default), switch to **Default — Always light** or **Default — Always dark** in **Tools → Code Blocks**. Picking any of the Prism themes also locks the appearance — those themes are static and don't react to OS dark mode. The lock is implemented in CSS — there is no inline `<style>` injected per request — so it composes cleanly with caching plugins.
 
-### Can I use my own theme?
-
-Yes. Scroll past the dropdown on **Tools → Code Blocks** to the **Custom theme** section and upload a single `.css` file (up to 256 KB). It's added to the dropdown under a **Custom** group so you can select it like any other theme. Replacing the upload swaps the stylesheet in place; **Remove custom theme** deletes it. Only one custom theme is stored at a time — the plugin doesn't manage a library.
-
-Security checks before the stylesheet is stored:
-
-- Capability (`manage_options`) and nonce checks on the form submission.
-- Filename must end in `.css`.
-- Size capped at 256 KB.
-- Content is rejected outright if it contains `<script>`, `<?php` / `<?=`, `javascript:` / `vbscript:` URIs, `data:text/html`, `expression(`, `behavior:`, `-moz-binding:`, `@import`, or a remote / protocol-relative `url()` (so an uploaded theme can't fetch from or beacon to a third-party origin) anywhere in the file.
-- The sanitised CSS is stored in your database (no file is ever written to disk) and printed inline on pages that contain a code block — updating the plugin doesn't blow it away, and nothing user-supplied is publicly served from your uploads folder.
-
 ### Where do the Prism themes come from?
 
-The 8 stock themes are bundled from [PrismJS/prism](https://github.com/PrismJS/prism) at v1.30.0 (MIT — see `assets/themes/LICENSE-prism`). The 37 community themes are bundled from [PrismJS/prism-themes](https://github.com/PrismJS/prism-themes) (MIT — see `assets/themes/LICENSE-prism-themes`). They are served from your own origin alongside the rest of the plugin's assets — no external request at runtime.
+The 8 stock themes are bundled from [PrismJS/prism](https://github.com/PrismJS/prism) at v1.30.0 (MIT — see `assets/themes/LICENSE-prism.txt`). The 37 community themes are bundled from [PrismJS/prism-themes](https://github.com/PrismJS/prism-themes) (MIT — see `assets/themes/LICENSE-prism-themes.txt`). They are served from your own origin alongside the rest of the plugin's assets — no external request at runtime.
 
 ### Why is the language label not appearing on a particular block?
 
@@ -100,7 +87,7 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 ## Screenshots
 
 ### Settings
-The Code Block Enhancer settings screen in WordPress, showing the Appearance options with a code block theme dropdown set to "Default — Auto (follow OS dark mode)," a live preview of a syntax-highlighted PHP snippet, and a custom theme upload section.
+The Code Block Enhancer settings screen in WordPress, showing the Appearance options with a code block theme dropdown set to "Default — Auto (follow OS dark mode)" and a live preview of a syntax-highlighted PHP snippet.
 
 ![Settings](.wordpress-org/screenshot-1.png)
 

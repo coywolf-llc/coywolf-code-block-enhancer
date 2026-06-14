@@ -35,6 +35,7 @@ delete_option( 'coywolf_cbe_custom_theme_css' );
 delete_option( 'coywolf_cbe_languages' );
 delete_option( 'coywolf_cbe_baseline_merged_v1' );
 delete_option( 'coywolf_cbe_prefix_migrated_v1' );
+delete_option( 'coywolf_cbe_custom_theme_removed_v1' );
 
 // Legacy (≤1.0.54) names — short prefix and pre-migration options.
 delete_option( 'cbe_theme' );
