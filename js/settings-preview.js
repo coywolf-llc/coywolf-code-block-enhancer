@@ -8,13 +8,9 @@
  * Data is injected via wp_add_inline_script as
  * window.coywolfCbeSettingsPreview:
  *   {
- *     baseUrl: string,                          // .../assets/themes/
- *     themes:  { [key]: { file?, css?, lock } } // `css` = raw stylesheet
- *                                               //   text (the DB-stored
- *                                               //   custom theme; turned
- *                                               //   into a Blob URL here),
- *                                               //   else baseUrl + file.
- *                                               // lock: 'light'|'dark'|null
+ *     baseUrl: string,                    // .../assets/themes/
+ *     themes:  { [key]: { file, lock } }  // href = baseUrl + file;
+ *                                         // lock: 'light'|'dark'|null
  *   }
  *
  * Lock classes toggle on <body> rather than on a scoped wrapper because
@@ -55,46 +51,10 @@
 		if ( ! entry ) {
 			return '';
 		}
-		if ( typeof entry.css === 'string' ) {
-			// The custom theme is stored in the database and shipped as
-			// stylesheet text — wrap it in a Blob URL (once) so the same
-			// <link>-swapping path and the download anchor work unchanged.
-			if ( ! entry._blobUrl ) {
-				entry._blobUrl = URL.createObjectURL(
-					new Blob( [ entry.css ], { type: 'text/css' } )
-				);
-			}
-			return entry._blobUrl;
-		}
 		if ( entry.file && baseUrl ) {
 			return baseUrl + entry.file;
 		}
 		return '';
-	}
-
-	function updateDownloadLink( entry, href ) {
-		const a = document.getElementById( 'cbe-preview-download' ); // DOM id only — not a WP-registered name.
-		if ( ! a || ! entry ) {
-			return;
-		}
-		const name = entry.download || entry.file || 'theme.css';
-		a.setAttribute( 'href', href );
-		a.setAttribute( 'download', name );
-		// Re-render the "Download <code>name</code>" label using DOM
-		// APIs so the filename can never be parsed as HTML — defence
-		// in depth on top of the sanitize_file_name() pass the PHP
-		// side already applies. The static PHP-rendered version uses
-		// a localized format string; the dynamic re-render here
-		// mirrors it in English (translators see the correct prefix
-		// on first paint; a dropdown change re-paints in the source
-		// language — acceptable for an admin-only preview).
-		while ( a.firstChild ) {
-			a.removeChild( a.firstChild );
-		}
-		a.appendChild( document.createTextNode( 'Download ' ) );
-		const code = document.createElement( 'code' );
-		code.textContent = name;
-		a.appendChild( code );
 	}
 
 	function apply( key ) {
@@ -115,7 +75,6 @@
 		}
 
 		setLockClass( entry.lock || null );
-		updateDownloadLink( entry, href );
 	}
 
 	apply( select.value );

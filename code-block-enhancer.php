@@ -87,7 +87,7 @@ add_action( 'enqueue_block_editor_assets', function () {
  */
 add_action( 'wp_enqueue_scripts', function () {
 	// Prism is vendored under assets/prism/ at v1.30.0 (MIT — see
-	// assets/prism/LICENSE). Self-hosting eliminates the third-party CDN as
+	// assets/prism/LICENSE.txt). Self-hosting eliminates the third-party CDN as
 	// a supply-chain surface: a compromised cdnjs path would otherwise have
 	// injected arbitrary JS into every page that loads a code block.
 	$prism = COYWOLF_CBE_URL . 'assets/prism/';
@@ -139,28 +139,20 @@ add_action( 'wp_enqueue_scripts', function () {
 
 	// Selected theme stylesheet (depends on coywolf-cbe-style so token
 	// colours can reference the chrome's CSS custom properties / load after
-	// it). Bundled themes resolve to assets/themes/<file>; an uploaded
-	// custom theme is inline — its sanitised CSS lives in the database and
-	// is attached to a src-less handle via wp_add_inline_style() below.
-	$theme     = Coywolf_CBE_Settings::current_theme_entry();
-	$is_inline = ! empty( $theme['inline'] );
+	// it). Themes resolve to assets/themes/<file>.
+	$theme = Coywolf_CBE_Settings::current_theme_entry();
 	wp_register_style(
 		'coywolf-cbe-theme',
-		$is_inline ? false : Coywolf_CBE_Settings::theme_url( $theme ),
+		Coywolf_CBE_Settings::theme_url( $theme ),
 		array( 'coywolf-cbe-style' ),
 		COYWOLF_CBE_VERSION
 	);
 
 	// Styles must print in <head>, so enqueue here — NOT in render_block, which
 	// runs in the body after the head has already closed. Conditional so the CSS
-	// loads only on singular posts/pages that contain a code block. The custom
-	// theme's CSS option (up to 256 KB, autoload off) is likewise only read on
-	// pages that actually print it.
+	// loads only on singular posts/pages that contain a code block.
 	if ( is_singular() && has_block( 'core/code' ) ) {
 		wp_enqueue_style( 'coywolf-cbe-style' );
-		if ( $is_inline ) {
-			wp_add_inline_style( 'coywolf-cbe-theme', Coywolf_CBE_Settings::custom_theme_css() );
-		}
 		wp_enqueue_style( 'coywolf-cbe-theme' );
 	}
 } );

@@ -15,9 +15,8 @@
  *     custom dialog, so we fall through to the browser's native
  *     beforeunload prompt (a generic 2-option Leave / Stay).
  *
- * Form submissions of the Settings API form itself, the custom-theme
- * upload form, and the custom-theme remove form all bypass the guard:
- * they're intentional saves / navigations, not accidental drift away.
+ * Submitting the Settings API form bypasses the guard: that's an
+ * intentional save, not accidental drift away.
  */
 ( function () {
 	'use strict';
@@ -83,18 +82,6 @@
 	// dispatches a submit on settingsForm.
 	settingsForm.addEventListener( 'submit', function () {
 		suppressGuard = true;
-	} );
-
-	// Custom-theme upload / remove forms — they post to admin-post.php
-	// and intentionally navigate away. Any form on the page other than
-	// our Settings API form counts.
-	document.querySelectorAll( 'form' ).forEach( function ( f ) {
-		if ( f.id === FORM_ID ) {
-			return;
-		}
-		f.addEventListener( 'submit', function () {
-			suppressGuard = true;
-		} );
 	} );
 
 	// ----- beforeunload (tab close / reload / address bar) ---------------
