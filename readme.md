@@ -87,7 +87,7 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 ## Screenshots
 
 ### Settings
-The Code Block Enhancer settings screen in WordPress, showing the Appearance options with a code block theme dropdown set to "Default — Auto (follow OS dark mode)" and a live preview of a syntax-highlighted PHP snippet.
+The Code Block Enhancer settings screen, showing the Appearance section with the code block theme dropdown set to 'Default — Auto (follow OS dark mode)' and a live preview of a syntax-highlighted PHP code block with a copy-to-clipboard button.
 
 ![Settings](.wordpress-org/screenshot-1.png)
 
