@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.55
+Stable tag: 1.0.56
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,9 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
 
 == Changelog ==
+
+= 1.0.56 =
+* Remove custom-theme upload feature; rename license files to .txt (WP.org review) (#57).
 
 = 1.0.55 =
 * Fix WP.org review feedback: enqueue inline JS, 4-char prefixes, DB-stored custom theme (#56).
