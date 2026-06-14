@@ -175,7 +175,7 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 
 == Screenshots ==
 
-1. The Code Block Enhancer settings screen in WordPress, showing the Appearance options with a code block theme dropdown set to "Default — Auto (follow OS dark mode)" and a live preview of a syntax-highlighted PHP snippet.
+1. The Code Block Enhancer settings screen, showing the Appearance section with the code block theme dropdown set to 'Default — Auto (follow OS dark mode)' and a live preview of a syntax-highlighted PHP code block with a copy-to-clipboard button.
 2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
 
 == Changelog ==
