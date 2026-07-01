@@ -151,7 +151,7 @@ add_action( 'wp_enqueue_scripts', function () {
 	// Styles must print in <head>, so enqueue here — NOT in render_block, which
 	// runs in the body after the head has already closed. Conditional so the CSS
 	// loads only on singular posts/pages that contain a code block.
-	if ( is_singular() && has_block( 'core/code' ) ) {
+	if ( coywolf_cbe_singular_has_code_block() ) {
 		wp_enqueue_style( 'coywolf-cbe-style' );
 		wp_enqueue_style( 'coywolf-cbe-theme' );
 	}
@@ -213,6 +213,23 @@ add_filter( 'render_block', function ( $content, $block ) {
 }, 10, 2 );
 
 /**
+ * Whether the current main singular view contains a `core/code` block.
+ *
+ * The style-enqueue (wp_enqueue_scripts) and the preload emitter (wp_head)
+ * both need this answer on the same request; caching it in a static means the
+ * `has_block()` content scan runs once per request instead of once per hook.
+ *
+ * @return bool
+ */
+function coywolf_cbe_singular_has_code_block() {
+	static $cache = null;
+	if ( null === $cache ) {
+		$cache = is_singular() && has_block( 'core/code' );
+	}
+	return $cache;
+}
+
+/**
  * Eliminate the grammar-script critical request chain by emitting
  * `<link rel="preload" as="script" fetchpriority="low">` hints in
  * <head> for exactly the Prism grammars the current post needs.
@@ -241,7 +258,7 @@ add_filter( 'render_block', function ( $content, $block ) {
  * instead of double-fetching.
  */
 add_action( 'wp_head', function () {
-	if ( ! is_singular() || ! has_block( 'core/code' ) ) {
+	if ( ! coywolf_cbe_singular_has_code_block() ) {
 		return;
 	}
 
@@ -316,9 +333,15 @@ function coywolf_cbe_collect_code_block_languages( $content ) {
 	if ( ! function_exists( 'parse_blocks' ) ) {
 		return array();
 	}
+	static $cache = array();
+	$key = md5( (string) $content );
+	if ( isset( $cache[ $key ] ) ) {
+		return $cache[ $key ];
+	}
 	$found = array();
 	coywolf_cbe_walk_blocks_for_languages( parse_blocks( $content ), $found );
-	return array_keys( $found );
+	$cache[ $key ] = array_keys( $found );
+	return $cache[ $key ];
 }
 
 function coywolf_cbe_walk_blocks_for_languages( $blocks, &$found ) {
