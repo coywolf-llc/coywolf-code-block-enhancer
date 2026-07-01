@@ -4,7 +4,7 @@
 
 Adds syntax highlighting and a copy-to-clipboard button to the native WordPress Code block, plus a language picker in the editor sidebar. Assets load only on posts that actually contain a code block.
 
-- **Version:** 1.0.58
+- **Version:** 1.0.59
 - **Requires WordPress:** 6.3 or later
 - **Tested up to:** 7.0
 - **Requires PHP:** 7.4 or later
@@ -97,6 +97,9 @@ A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf G
 ![Front-end output](.wordpress-org/screenshot-2.png)
 
 ## Changelog
+
+### 1.0.59
+- Dedupe the per-request block scans on code-block pages (#60).
 
 ### 1.0.58
 - Updater: run GitHub release checks in the background so the Updates screen never hangs (#59).

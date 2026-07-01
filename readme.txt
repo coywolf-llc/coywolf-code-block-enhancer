@@ -4,7 +4,7 @@ Tags: code, syntax highlighting, prism, copy code, gutenberg
 Requires at least: 6.3
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.58
+Stable tag: 1.0.59
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -179,6 +179,9 @@ Privacy-first: this plugin includes no analytics, no tracking, and no data gathe
 2. A syntax-highlighted JSON-LD code block rendered on the front end of a Coywolf Guides article, showing a Schema.org Article example with @context, @type, headline, description, and a nested author Person object.
 
 == Changelog ==
+
+= 1.0.59 =
+* Dedupe the per-request block scans on code-block pages (#60).
 
 = 1.0.58 =
 * Updater: run GitHub release checks in the background so the Updates screen never hangs (#59).
